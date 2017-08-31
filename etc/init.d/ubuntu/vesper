@@ -1,0 +1,48 @@
+#! /bin/sh
+
+
+PIDPATH=/var/run
+PIDFILE=$PIDPATH/vesper.pid
+RUNTIME=/usr/local/vesper/bin/vesper
+CONFIG=/usr/local/vesper/config/config.json
+NICE=
+MAXFDS=
+CPUSCHED=
+IOSCHED=
+
+set -e
+
+start_opts() {
+  test -z "$NICE"     || echo -n " --nicelevel $NICE"
+  test -z "$CPUSCHED" || echo -n " --procsched $CPUSCHED"
+  test -z "$IOSCHED"  || echo -n " --iosched $IOSCHED"
+}
+
+. /lib/lsb/init-functions
+
+test -z "$MAXFDS" || ulimit -n "$MAXFDS"
+
+case "$1" in
+  start)
+    log_daemon_msg "Starting vesper" "vesper"
+
+    if start-stop-daemon --start --user root $(start_opts) --background --make-pidfile --pidfile "$PIDFILE" --exec "$RUNTIME" "$CONFIG"; then
+      log_end_msg 0
+    else
+      log_end_msg 1
+    fi
+    ;;
+  stop)
+    log_daemon_msg "Stopping vesper" "vesper"
+    if start-stop-daemon --stop --retry 30 --user root --pidfile "$PIDFILE"; then
+      log_end_msg 0
+    else
+      log_end_msg 1
+    fi
+    ;;
+  *)
+    log_action_msg "Usage: /etc/init.d/vesper {start|stop}"
+    exit 1
+esac
+
+exit 0

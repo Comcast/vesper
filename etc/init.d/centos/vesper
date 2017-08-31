@@ -1,0 +1,58 @@
+#! /bin/sh
+
+. /etc/init.d/functions
+
+# /etc/init.d/vesper: start and stop notification manager
+
+PIDPATH=/var/run
+PIDFILE=$PIDPATH/vesper.pid
+CMD=/usr/local/vesper/bin/vesper
+ARGS=" /usr/local/vesper/config/config.json"
+NICE=
+MAXFDS=
+CPUSCHED=
+IOSCHED=
+
+set -e
+
+start() {
+	if [ -f $PIDFILE ]; then
+		echo "vesper Daemon seems to be already running, we found pidfile $PIDFILE."
+		exit 2
+	fi
+	echo -n "Starting vesper...."
+	$CMD $ARGS < /dev/null &
+	echo $! > $PIDFILE
+	echo "vesper Daemon started."
+}
+
+stop() {
+	echo -n "Stopping vesper...."
+	if killproc -p $PIDFILE; then
+		rm -f $PIDFILE
+	else
+		echo 1
+	fi
+}
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+		restart
+	;;
+	*)
+		echo "Usage: service vesper {start|stop|restart}"
+		exit 3
+esac
+
+exit 0
