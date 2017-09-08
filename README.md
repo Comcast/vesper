@@ -198,4 +198,4 @@ Example
 | VESPER-0151 | unable to unmarshal decoded JWT header |
 | VESPER-0152 | unable to base64 url decode claims part of JWT |
 | VESPER-0153 | unable to unmarshal decoded JWT claims |
-| VESPER-0154 | <string will depend on error detected> |
+| VESPER-0154 | STRING WILL DEPEND ON ERROR DETECTED |
