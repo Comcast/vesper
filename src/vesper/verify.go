@@ -30,7 +30,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		traceID = "VESPER-" + uuid.NewV1().String()
 	}
 	response.Header().Set("Trace-Id", traceID)
-	
+
 	var iat uint64
 	var origTNs, destTNs []string
 	var identity string
@@ -336,7 +336,7 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 		// not the expected number of fields in header
 		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=decoded header does not have the expected number of fields (4)", traceID, clientIP);
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0124", ReasonString: "decoded header does not have the expected number of fields (4)"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0126", ReasonString: "decoded header does not have the expected number of fields (4)"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("decoded header does not have the expected number of fields (4)")
 	}
@@ -344,7 +344,7 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	if !reflect.ValueOf(m["alg"]).IsValid() || !reflect.ValueOf(m["ppt"]).IsValid() || !reflect.ValueOf(m["typ"]).IsValid() || !reflect.ValueOf(m["x5u"]).IsValid() {
 		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=one or more of the required fields missing in JWT header (%+v)", traceID, clientIP, m);
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0125", ReasonString: "one or more of the required fields missing in JWT header"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0127", ReasonString: "one or more of the required fields missing in JWT header"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("one or more of the required fields missing in JWT header")
 	}
@@ -356,14 +356,14 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 		if alg != "ES256" {
 			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=alg field value (%v) in JWT header is not \"ES256\"", traceID, clientIP, alg);
 			w.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0126", ReasonString: "alg field value in JWT header is not \"ES256\""}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0128", ReasonString: "alg field value in JWT header is not \"ES256\""}}
 			json.NewEncoder(w).Encode(jsonErr)
 			return "", nil, fmt.Errorf("alg field value in JWT header is not \"ES256\"")
 		}
 	default:
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=alg field value (%v) in JWT header is not a string", traceID, clientIP, m);
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0127", ReasonString: "alg field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0129", ReasonString: "alg field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("alg field value in JWT header is not a string")
 	}
@@ -375,14 +375,14 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 		if ppt != "shaken" {
 			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=ppt field value (%v) in JWT header is not \"shaken\"", traceID, clientIP, ppt);
 			w.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0128", ReasonString: "ppt field value in JWT header is not \"shaken\""}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0130", ReasonString: "ppt field value in JWT header is not \"shaken\""}}
 			json.NewEncoder(w).Encode(jsonErr)
 			return "", nil, fmt.Errorf("ppt field value in JWT header is not \"shaken\"")
 		}
 	default:
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=ppt field value (%v) in JWT header is not a string", traceID, clientIP, m);
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0129", ReasonString: "ppt field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0131", ReasonString: "ppt field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("ppt field value in JWT header is not a string")
 	}
@@ -394,14 +394,14 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 		if typ != "passport" {
 			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=typ field value (%v) in JWT header is not \"passport\"", traceID, clientIP, typ);
 			w.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0130", ReasonString: "typ field value in JWT header is not \"passport\""}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0132", ReasonString: "typ field value in JWT header is not \"passport\""}}
 			json.NewEncoder(w).Encode(jsonErr)
 			return "", nil, fmt.Errorf("typ field value in JWT header is not \"passport\"")
 		}
 	default:
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=typ field value (%v) in JWT header is not a string", traceID, clientIP, m);
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0131", ReasonString: "typ field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0133", ReasonString: "typ field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("typ field value in JWT header is not a string")
 	}
@@ -413,7 +413,7 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	default:
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=x5u field value (%v) in JWT header is not a string", traceID, clientIP, m);
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0132", ReasonString: "x5u field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-0134", ReasonString: "x5u field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("x5u field value in JWT header is not a string")
 	}
