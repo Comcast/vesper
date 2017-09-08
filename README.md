@@ -7,7 +7,32 @@ SHAKEN based signing and validation server
 
 ## HTTP Response
 
-### 400
+### Success
+
+#### 200 OK
+
+Example
+```
+{
+  "signingResponse": {
+    "identity": "eyJhbGciOiJFUzI1NiIsInR5cCI6InBhc3Nwb3J0IiwicHB0Ijoic2hha2VuIiwieDV1IjoiaHR0cHM6Ly9jZXJ0LWF1dGgucG9jLnN5cy5jb21jYXN0Lm5ldC9leGFtcGxlLmNlciJ9.eyJhdHRlc3QiOiJBIiwiZGVzdCI6eyJ0biI6WyJmZHN2Z2FzIl19LCJpYXQiOjMyMzEyMzQxLCJvcmlnIjp7InRuIjoiZHdkdyJ9LCJvcmlnaWQiOiJkc2RzZCJ9.xhVsurlxeS8cidMQxnQKb9ZLLQwgzYjMhZ_crGXpT115RrcYYRpCT1qU421ttHSAlwX_LsR8HXf_F6WSyBpuJw;info=<https://cert-auth.poc.sys.comcast.net/example.cer>;alg=ES256"
+  }
+}
+```
+
+### Unsuccessful
+
+#### 400
+
+Example
+```
+{
+  "signingResponse": {
+    "reasonCode": "VESPER-0002",
+    "reasonString": "Unable to parse request body"
+  }
+}
+```
 
 | reasonCode | reasonString |
 | ----- | ----- |
@@ -37,7 +62,17 @@ SHAKEN based signing and validation server
 | VESPER-0024 | dest tn in request payload is not an array |
 | VESPER-0025 | dest field in request payload MUST be a JSON object |
 
-### 500
+#### 500
+
+Example
+```
+{
+  "signingResponse": {
+    "reasonCode": "VESPER-0152",
+    "reasonString": "error in signing request"
+  }
+}
+```
 
 | reasonCode | reasonString |
 | ----- | ----- |
@@ -46,11 +81,67 @@ SHAKEN based signing and validation server
 | VESPER-0052 | error in signing request |
 
 
-# POST /stir/v1/signing
+# POST /stir/v1/verification
 
 ## HTTP Response
 
-### 400
+### Success
+
+#### 200
+
+Example
+```
+{
+  "verificationResponse": {
+    "dest": {
+      "tn": [
+        "1215345567"
+      ]
+    },
+    "iat": 1504282247,
+    "jwt": {
+      "claims": {
+        "attest": "A",
+        "dest": {
+          "tn": [
+            "1215345567"
+          ]
+        },
+        "iat": 1504282247,
+        "orig": {
+          "tn": "12154567894"
+        },
+        "origid": "1db966a6-8f30-11e7-bc77-fa163e70349d"
+      },
+      "header": {
+        "alg": "ES256",
+        "ppt": "shaken",
+        "typ": "passport",
+        "x5u": "https://cert-auth.poc.sys.comcast.net/example.cer"
+      }
+    },
+    "orig": {
+      "tn": [
+        "12154567894"
+      ]
+    }
+  }
+}
+```
+
+### Unsuccessful
+
+#### 400
+
+Example
+```
+{
+  "verificationResponse": {
+    "reasonCode": "VESPER-0100",
+    "reasonString": "Unable to parse request body"
+  }
+}
+```
 
 | reasonCode | reasonString |
 | ----- | ----- |
@@ -89,7 +180,17 @@ SHAKEN based signing and validation server
 | VESPER-0133 | typ field value in JWT header is not a string |
 | VESPER-0134 | x5u field value in JWT header is not a string |
 
-### 500
+#### 500
+
+Example
+```
+{
+  "verificationResponse": {
+    "reasonCode": "VESPER-0150",
+    "reasonString": "unable to base64 url decode header part of JWT"
+  }
+}
+```
 
 | reasonCode | reasonString |
 | ----- | ----- |
