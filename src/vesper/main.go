@@ -30,7 +30,6 @@ type Configuration struct {
 	Fqdn string `json:"fqdn"`
 	SslCertFile string `json:"ssl_cert_file"`
 	SslKeyFile string `json:"ssl_key_file"`
-	IatGracePeriod uint16 `json:"iat_grace_period"`
 	Authentication map[string]interface{} `json:"authentication"`	// unmarshals a JSON object into a string-keyed map
 }
 

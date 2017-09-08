@@ -4,7 +4,6 @@
 	"fqdn" : "",
 	"ssl_cert_file" : "",
 	"ssl_key_file" : "",
-	"iat_grace_period": 60,
 	"authentication" : {
 		"x5u" : "",
 		"pvt_key_file" : ""
