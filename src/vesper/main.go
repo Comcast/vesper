@@ -36,13 +36,8 @@ type Configuration struct {
 
 // ErrorBlob -- This is a standard error object
 type ErrorBlob struct {
-	Code string `json:"code"`
-	Message string `json:"message"`
-}
-
-// ErrorResponse -- for HTTP response codes used for more than one anomaly
-type ErrorResponse struct {
-	Error ErrorBlob `json:"error"`
+	ReasonCode string `json:"reasonCode"`
+	ReasonString string `json:"reasonString"`
 }
 
 // Read from configuration file and validate keys exist
