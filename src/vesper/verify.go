@@ -298,12 +298,10 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	if err != nil {
 		logError("Type=vesperVerifySignature, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=error in verifying signature : %v", traceID, clientIP, err);
 		response.WriteHeader(http.StatusInternalServerError)
-		resp["verificationResponse"].(map[string]interface{})["responseCode"] = 500
+		resp["verificationResponse"].(map[string]interface{})["reasonCode"] = "VESPER-0154"
 		resp["verificationResponse"].(map[string]interface{})["reasonString"] = err.Error()
 	} else {
 		response.WriteHeader(http.StatusOK)
-		resp["verificationResponse"].(map[string]interface{})["responseCode"] = 200
-		resp["verificationResponse"].(map[string]interface{})["reasonString"] = "verified"
 	}
 	json.NewEncoder(response).Encode(resp)
 
