@@ -1,15 +1,15 @@
 # vesper
 SHAKEN based signing and validation server
 
-# APIs
+## APIs
 
-# POST /stir/v1/signing
+### POST /stir/v1/signing
 
-## HTTP Response
+#### HTTP Response
 
-### Success
+##### Success
 
-#### 200 OK
+###### 200 OK
 
 Example
 ```
@@ -20,9 +20,9 @@ Example
 }
 ```
 
-### Unsuccessful
+##### Unsuccessful
 
-#### 400
+###### 400
 
 Example
 ```
@@ -61,8 +61,9 @@ Example
 | VESPER-0023 | one or more dest tns in request payload is an empty string |
 | VESPER-0024 | dest tn in request payload is not an array |
 | VESPER-0025 | dest field in request payload MUST be a JSON object |
+| VESPER-0026 | claims keys in request payload is not lexicographically ordered|
 
-#### 500
+###### 500
 
 Example
 ```
@@ -81,13 +82,13 @@ Example
 | VESPER-0052 | error in signing request |
 
 
-# POST /stir/v1/verification
+### POST /stir/v1/verification
 
-## HTTP Response
+#### HTTP Response
 
-### Success
+##### Success
 
-#### 200
+###### 200
 
 Example
 ```
@@ -129,9 +130,9 @@ Example
 }
 ```
 
-### Unsuccessful
+##### Unsuccessful
 
-#### 400
+###### 400
 
 Example
 ```
@@ -180,7 +181,7 @@ Example
 | VESPER-0133 | typ field value in JWT header is not a string |
 | VESPER-0134 | x5u field value in JWT header is not a string |
 
-#### 500
+###### 500
 
 Example
 ```

@@ -23,6 +23,17 @@ func validatePayload(r map[string]interface{}, traceID, clientIP string) (string
     return origTN, iat, destTNs, "VESPER-0004", fmt.Errorf("request payload has more than expected fields")
   }
 
+	// lexicographical order check
+	var pk string
+	c := 0
+	for k, _ := range r {
+		if c++ > 0 && k < pk {
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validatePayload, Message=keys in request payload (%+v) is not lexicographically ordered", traceID, clientIP, r);
+			return origTN, iat, destTNs, "VESPER-0026", fmt.Errorf("%v lexically bytewise less than %v, in request payload")
+		}
+		pk = k	// save for next iteration
+	}	
+	
   // attest ...
   switch reflect.TypeOf(r["attest"]).Kind() {
   case reflect.String:
