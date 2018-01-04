@@ -442,7 +442,7 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j string, oTNs, dT
 		return nil, err
 	}
 	//origTNInClaims, iatInClaims, destTNsInClaims, err := validatePayload(w, m, traceID, clientIP)
-	_, _, _, errCode, err := validatePayload(m, traceID, clientIP)
+	_, _, _, _, errCode, err := validatePayload(m, traceID, clientIP)
 	if err != nil {
 		// ResponseWriter has been updated in the function
 		w.WriteHeader(http.StatusInternalServerError)

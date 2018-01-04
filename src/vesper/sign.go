@@ -47,15 +47,16 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	default:
-		// err == nil
-		_, _, _, errCode, err := validatePayload(r, traceID, clientIP)
-		if err != nil {
-			response.WriteHeader(http.StatusBadRequest)
-			jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: errCode, ReasonString: err.Error()}}
-			json.NewEncoder(response).Encode(jsonErr)
-			return
-		}
+		// err == nil. continue
 	}
+	orderedMap, _, _, _, errCode, err := validatePayload(r, traceID, clientIP)
+	if err != nil {
+		response.WriteHeader(http.StatusBadRequest)
+		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: errCode, ReasonString: err.Error()}}
+		json.NewEncoder(response).Encode(jsonErr)
+		return
+	}
+
 	logInfo("Type=vespersignRequest, TraceID=%v, Module=signRequest, Message=%+v", traceID, r)
 
 	// at this point, the input has been validated
@@ -68,7 +69,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
-	claimsBytes, _ := json.Marshal(r)
+	claimsBytes, _ := json.Marshal(orderedMap)
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in converting claims to byte array : %v", traceID, clientIP, err);
 		response.WriteHeader(http.StatusInternalServerError)
