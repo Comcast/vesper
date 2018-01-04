@@ -7,7 +7,7 @@ SHAKEN based signing and validation server
 
 #### HTTP Response
 
-##### Success
+##### Success	
 
 ###### 200 OK
 
@@ -61,7 +61,6 @@ Example
 | VESPER-0023 | one or more dest tns in request payload is an empty string |
 | VESPER-0024 | dest tn in request payload is not an array |
 | VESPER-0025 | dest field in request payload MUST be a JSON object |
-| VESPER-0026 | claims keys in request payload is not lexicographically ordered|
 
 ###### 500
 
