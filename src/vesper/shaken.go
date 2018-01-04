@@ -125,7 +125,6 @@ func createSignature(header, claims []byte) (string, string, error)  {
 			// alg = ES256
 			pvtkey, err := x509.ParseECPrivateKey(block.Bytes)
 			if err == nil {
-				logInfo("Got here")
 				canonical_string, sig, err := encodeEC(header, claims, pvtkey)
 				if err == nil {
 					return canonical_string, sig, nil
