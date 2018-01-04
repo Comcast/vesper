@@ -19,8 +19,8 @@ import (
 // ShakenHdr - structure that holds JWT header
 type ShakenHdr struct {
 	Alg string `json:"alg"`
-	Typ string `json:"typ"`
 	Ppt string `json:"ppt"`
+	Typ string `json:"typ"`
 	X5u string `json:"x5u"`
 }
 

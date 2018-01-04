@@ -59,7 +59,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	logInfo("Type=vespersignRequest, TraceID=%v, Module=signRequest, Message=%+v", traceID, r)
 
 	// at this point, the input has been validated
-	hdr := ShakenHdr{	Alg: "ES256", Typ: "passport", Ppt: "shaken", X5u: config.Authentication["x5u"].(string)}
+	hdr := ShakenHdr{	Alg: "ES256", Ppt: "shaken", Typ: "passport", X5u: config.Authentication["x5u"].(string)}
 	hdrBytes, err := json.Marshal(hdr)
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in converting header to byte array : %v", traceID, clientIP, err);
