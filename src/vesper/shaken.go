@@ -19,8 +19,8 @@ import (
 // ShakenHdr - structure that holds JWT header
 type ShakenHdr struct {
 	Alg string `json:"alg"`
-	Typ string `json:"typ"`
 	Ppt string `json:"ppt"`
+	Typ string `json:"typ"`
 	X5u string `json:"x5u"`
 }
 
@@ -125,7 +125,6 @@ func createSignature(header, claims []byte) (string, string, error)  {
 			// alg = ES256
 			pvtkey, err := x509.ParseECPrivateKey(block.Bytes)
 			if err == nil {
-				logInfo("Got here")
 				canonical_string, sig, err := encodeEC(header, claims, pvtkey)
 				if err == nil {
 					return canonical_string, sig, nil
