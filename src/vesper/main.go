@@ -7,31 +7,31 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"encoding/json"
 	"path/filepath"
 	"syscall"
+	"context"
 	"time"
 	"strings"
 	"github.com/httprouter"
 	"github.com/cors"
 	"github.com/comcast/irislogger"
+	"vesper/configuration"
+	"vesper/rootcerts"
+	"vesper/sks"
+	"vesper/signcredentials"
 )
 
 var (
-	info    *irislogger.Logger
-	config Configuration
+	info												*irislogger.Logger
+	rootCerts										*rootcerts.RootCerts
+	signingCredentials					*signcredentials.SigningCredentials
+	sksCredentials							*sks.SksCredentials
+	httpClient									*http.Client
+	rootCertsTicker							*time.Ticker
+	signingCredentialsTicker		*time.Ticker
+	sksCredentialsTicker				*time.Ticker
+	stopTicker									chan struct{}	
 )
-
-// The first letter of the struct elements must be upper case in order to export them
-// The JSON decoder will not use struct elements that are not exported
-type Configuration struct {
-	LogFile string `json:"log_file"`
-	LogFileMaxSize int64 `json:"log_file_max_size"`
-	Fqdn string `json:"fqdn"`
-	SslCertFile string `json:"ssl_cert_file"`
-	SslKeyFile string `json:"ssl_key_file"`
-	Authentication map[string]interface{} `json:"authentication"`	// unmarshals a JSON object into a string-keyed map
-}
 
 // ErrorBlob -- This is a standard error object
 type ErrorBlob struct {
@@ -39,34 +39,30 @@ type ErrorBlob struct {
 	ReasonString string `json:"reasonString"`
 }
 
-// Read from configuration file and validate keys exist
-func getConfiguration(f string) (err error) {
-	file, err := os.Open(f)
-	if err == nil {
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&config)
-	}
-	return
-}
-
 // Instantiate logging objects
 func initializeLogging() (err error) {
-	err = os.MkdirAll(filepath.Dir(config.LogFile), 0755)
+	err = os.MkdirAll(filepath.Dir(configuration.ConfigurationInstance().LogFile), 0755)
 	if err == nil {
-		info = irislogger.New(config.LogFile, config.LogFileMaxSize)
+		info = irislogger.New(configuration.ConfigurationInstance().LogFile, configuration.ConfigurationInstance().LogFileMaxSize)
 	}
 	return
 }
 
 // function to log in specific format
 func logInfo(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05.000") + " vesper=" + config.Fqdn + ", Code=info, " + format, args ...)
+	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().Host+", Version=" + softwareVersion + ", Code=Info, "+format, args...)
 }
 
-// function to log in specific format
+// function to log errors
 func logError(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05.000") + " vesper=" + config.Fqdn + ", Code=Error, " + format, args ...)
+	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().Host+", Version=" + softwareVersion + ", Code=Error, "+format, args...)
 }
+
+// function to log critical errors
+func logCritical(format string, args ...interface{}) {
+	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().Host+", Version=" + softwareVersion + ", Code=Critical, "+format, args...)
+}
+
 
 // Read config file
 // Instantiate logging
@@ -74,8 +70,9 @@ func init() {
 	if (len(os.Args) != 2) {
 		log.Fatal("The config file (ABSOLUTE PATH + FILE NAME) must be the only command line arguement")
 	}
+
 	// read config
-	err  := getConfiguration(os.Args[1])
+	err := configuration.ConfigurationInstance().GetConfiguration(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,23 +82,52 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
 
-func handleSignals() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	signal.Notify(c, syscall.SIGTERM)
-	go func() {
-		<-c
-		logInfo("Type=vesperStop, Message=Shutting down vesper .... ")
+	// create http client object once - to be reused
+	httpClient = &http.Client{}
+	
+	// initiatlize sks credentials object
+	sksCredentials, err = sks.InitObject(configuration.ConfigurationInstance().SksCredentialsFile)
+	if err != nil {
+		logCritical("Type=sksConfig, Message=%v.... cannot start Vesper Service .... ", err)
+		os.Exit(2)
+	}		
+
+	// After sks credentials object is successfully initialized, initiatlize rootcerts object
+	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, sksCredentials)
+	if err != nil {
+		logCritical("Type=signingCredentials, Message=%v.... cannot start Vesper Service .... ", err)
 		os.Exit(1)
-	}()
+	}
+
+	// After sks credentials object is successfully initialized, initiatlize rootcerts object
+	rootCerts, err = rootcerts.InitObject(info, softwareVersion, httpClient, sksCredentials)
+	if err != nil {
+		logCritical("Type=rootCerts, Message=%v.... cannot start Vesper Service .... ", err)
+		os.Exit(1)
+	}
+	
+	// start periodic tickers
+	// NewTicker returns a new Ticker containing a channel that will send the time with
+	// a period specified by the duration argument. It adjusts the intervals or drops
+	// ticks to make up for slow receiver.
+	// https://golang.org/pkg/time/#NewTicker
+	// To pull latest root certs from SKS
+	rootCertsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Minute)
+	// To pull current signing credentials - x5u and privatekey
+	signingCredentialsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Minute)
+	// To check on changes to sks URL or token
+	sksCredentialsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SksCredentialsFileCheckInterval)*time.Second)
+	// initiatize channel of empty struct. send this empty struct to stop timer, close channel and exit go routine
+	stopTicker = make(chan struct{})	
 }
 
 //
 func main() {
 	logInfo("Type=vesperStart, Message=Starting vesper .... ")
-	handleSignals()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	signal.Notify(stop, syscall.SIGTERM)
 
 	router := httprouter.New()
 	router.GET("/v1/version", version)
@@ -119,31 +145,81 @@ func main() {
 	handler := c.Handler(router)
 	errs := make(chan error)
 
-	// Start HTTP server
- 	go func() {
-		logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on port 80 ...")
-		// Start the service.
-		// Note: netstats -plnt shows a IPv6 TCP socket listening on ":80"
-		//       but no IPv4 TCP socket. This is not an issue
-		if err := http.ListenAndServe(":80", handler); err != nil {
-			errs <- err
-		}
-	 }()
 
+	// start periodic timer
+	go func() {
+		for {
+			select {
+			case <- rootCertsTicker.C:	
+				// fetch root cerst from SKS and replace cached ones
+				rootCerts.FetchRootCertsFromSks()
+			case <- signingCredentialsTicker.C:	
+				// fetch current x5u and privatekey for signing. This will replace cached credentials
+				signingCredentials.FetchSigningCredentialsFromSks()
+			case <- sksCredentialsTicker.C:
+				sksCredentials.UpdateSksCredentials()
+			case <- stopTicker:
+				// Stop turns off a ticker. After Stop, no more ticks will be sent.
+				// Stop does not close the channel, to prevent a read from the channel succeeding incorrectly
+				// https://golang.org/pkg/time/#Ticker.Stop
+				logInfo("Type=ntMgrTimerStop, Message=stopping all tickers and closing channel before exiting")
+				rootCertsTicker.Stop()
+				signingCredentialsTicker.Stop()
+				sksCredentialsTicker.Stop()
+				return
+			}
+		}
+	}()
+
+	var srv http.Server
 	// Start HTTPS server only if cert and key file exist
-	if (len(strings.TrimSpace(config.SslCertFile)) > 0) && (len(strings.TrimSpace(config.SslKeyFile)) > 0) {
+	if (len(strings.TrimSpace(configuration.ConfigurationInstance().SslCertFile)) > 0) && (len(strings.TrimSpace(configuration.ConfigurationInstance().SslKeyFile)) > 0) {
 		go func() {
 			logInfo("Type=vesperHttpsServiceStart, Message=Staring HTTPS service on port 443 ...")
 			// Note: netstats -plnt shows a IPv6 TCP socket listening on ":443"
 			//       but no IPv4 TCP socket. This is not an issue
-			if err := http.ListenAndServeTLS(":443", config.SslCertFile, config.SslKeyFile, handler); err != nil {
+			srv := &http.Server{Addr: ":443", Handler: handler}
+			if err := srv.ListenAndServeTLS(configuration.ConfigurationInstance().SslCertFile, configuration.ConfigurationInstance().SslKeyFile); err != nil {
+				logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
 				errs <- err
 			}
 		}()
+	} else {
+		// Start HTTP server
+	 	go func() {
+			usePort := "80"
+			if configuration.ConfigurationInstance().Port != "" {
+				usePort = configuration.ConfigurationInstance().Port
+			}
+			logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on port %v ...", usePort)
+			// Start the service.
+			// Note: netstats -plnt shows a IPv6 TCP socket listening on user specified port
+			//       but no IPv4 TCP socket. This is not an issue
+			srv := &http.Server{Addr: ":"+usePort, Handler: handler}
+			if err := srv.ListenAndServe(); err != nil {
+				logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
+				errs <- err
+			}
+		 }()
 	}
+
 	// This will run forever until channel receives error
 	select {
 	case err := <-errs:
-		logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
+		logError("Type=vesperHttpServiceFailure, Message=Could not start service due to (error: %s)", err)
+		logInfo("Type=vesperShutdown, Message=Shutting down vesper .... ")
+	case <-stop:
+		logInfo("Type=vesperShutdown, Message=Shutting down vesper .... ")
+		// Pass a context with a timeout to tell a blocking function that it
+		// should abandon its work after the timeout elapses.
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			logError("Type=vesperHttpServiceShutdownFailure, Message=Shutdown of http server error - %v", err)
+			logInfo("Type=vesperStop, Message=vesper stopped but NOT gracefully")
+		} else {
+			logInfo("Type=vesperStop, Message=vesper gracefully stopped")
+		}
 	}
 }

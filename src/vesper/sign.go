@@ -59,8 +59,9 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 
 	logInfo("Type=vespersignRequest, TraceID=%v, Module=signRequest, Message=%+v", traceID, r)
 
+	x, p := signingCredentials.Signing()
 	// at this point, the input has been validated
-	hdr := ShakenHdr{	Alg: "ES256", Ppt: "shaken", Typ: "passport", X5u: config.Authentication["x5u"].(string)}
+	hdr := ShakenHdr{	Alg: "ES256", Ppt: "shaken", Typ: "passport", X5u: x}
 	hdrBytes, err := json.Marshal(hdr)
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in converting header to byte array : %v", traceID, clientIP, err);
@@ -77,7 +78,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
-	canonicalString, sig, err := createSignature(hdrBytes, claimsBytes)
+	canonicalString, sig, err := createSignature(hdrBytes, claimsBytes, []byte(p))
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in signing request for request payload (%+v) : %v", traceID, clientIP, r, err);
 		response.WriteHeader(http.StatusInternalServerError)
@@ -88,7 +89,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 
 	resp := make(map[string]interface{})
 	resp["signingResponse"] = make(map[string]interface{})
-	resp["signingResponse"].(map[string]interface{})["identity"] = canonicalString + "." + sig + ";info=<" + config.Authentication["x5u"].(string) + ">;alg=ES256"
+	resp["signingResponse"].(map[string]interface{})["identity"] = canonicalString + "." + sig + ";info=<" + x + ">;alg=ES256"
 	response.WriteHeader(http.StatusOK)
 	json.NewEncoder(response).Encode(resp)
 	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in signRequest() : %v", traceID, time.Since(start));

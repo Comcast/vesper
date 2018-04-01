@@ -1,11 +1,12 @@
 {
 	"log_file" : "/var/log/vesper/vesper.log",
 	"log_file_max_size" : 50000000,
-	"fqdn" : "",
+	"host" : "",
+	"port" : "",
 	"ssl_cert_file" : "",
 	"ssl_key_file" : "",
-	"authentication" : {
-		"x5u" : "",
-		"pvt_key_file" : ""
-	}
+	"root_certs_fetch_interval" : 60,
+	"signing_credentials_fetch_interval" : 60,
+	"sks_credentials_file" ; "",
+	"sks_credentials_file_check_interval" : 60
 }

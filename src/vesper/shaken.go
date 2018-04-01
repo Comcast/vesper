@@ -115,30 +115,21 @@ func verifyEC(token string, key *ecdsa.PublicKey) error {
 // createSignature is called to create a JWT using ES256 algorithm.
 // Note: The header and claims part of the created JWT is stripped out
 //			 before returning the signature only
-func createSignature(header, claims []byte) (string, string, error)  {
-	private_key_file := config.Authentication["pvt_key_file"].(string)
-	// decode the private key
-	pvtkeybyte, err := ioutil.ReadFile(private_key_file)
-	if err == nil {
-		block, _ := pem.Decode(pvtkeybyte)
-		if block != nil {
-			// alg = ES256
-			pvtkey, err := x509.ParseECPrivateKey(block.Bytes)
+func createSignature(h, c, p []byte) (string, string, error)  {
+	block, _ := pem.Decode(p)
+	if block != nil {
+		// alg = ES256
+		pvtKey, err := x509.ParseECPrivateKey(block.Bytes)
+		if err == nil {
+			canonical_string, sig, err := encodeEC(h, c, pvtKey)
 			if err == nil {
-				canonical_string, sig, err := encodeEC(header, claims, pvtkey)
-				if err == nil {
-					return canonical_string, sig, nil
-				}
-			} else {
-				logInfo("%v", err)
+				return canonical_string, sig, nil
 			}
-		} else {
-			err = fmt.Errorf("no PEM data found")
+			return "", "", err
 		}
+		return "", "", err
 	}
-	// Handle error condition for any error here
-	logError("err: %v", err)
-	return "", "", err
+	return "", "", fmt.Errorf("no PEM data found")
 }
 
 // verifySignature is called to verify the signature which was created
@@ -169,6 +160,15 @@ func verifySignature(x5u, token string) error {
 	if err != nil {
 		return err
 	}
+
+	opts := x509.VerifyOptions{
+		Roots:  rootCerts.Root(),
+	}
+	
+	if _, err := cert.Verify(opts); err != nil {
+		return err
+	}
+		
 	// ES256
 	ecdsa_pub, ok := cert.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
