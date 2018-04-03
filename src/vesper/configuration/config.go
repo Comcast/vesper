@@ -19,7 +19,8 @@ type Configuration struct {
 	RootCertsFetchInterval					int64				`json:"root_certs_fetch_interval"`
 	SigningCredentialsFetchInterval int64				`json:"signing_credentials_fetch_interval"`
 	SksCredentialsFile							string			`json:"sks_credentials_file"`
-	SksCredentialsFileCheckInterval	int64				`json:"sks_credentials_file_check_interval"`
+	SticrHostFile										string			`json:"sticr_host_file"`
+	SksSticrFilesCheckInterval			int64				`json:"sks_sticr_files_check_interval"`
 }
 
 var configurationInstance *Configuration = nil
@@ -37,7 +38,8 @@ func ConfigurationInstance() *Configuration {
 			RootCertsFetchInterval						:	60,
 			SigningCredentialsFetchInterval		:	60,
 			SksCredentialsFile								: "",
-			SksCredentialsFileCheckInterval		: 60,
+			SticrHostFile											: "",
+			SksSticrFilesCheckInterval				: 60,
 		}
 		configurationInstance = config
 	}

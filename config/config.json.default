@@ -8,5 +8,6 @@
 	"root_certs_fetch_interval" : 60,
 	"signing_credentials_fetch_interval" : 60,
 	"sks_credentials_file" ; "",
-	"sks_credentials_file_check_interval" : 60
+	"sticr_host_file" : "",
+	"sks_sticr_files_check_interval" : 60
 }

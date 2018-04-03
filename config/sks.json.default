@@ -1,0 +1,4 @@
+{
+	"sks": "https://<FQDN/CNAME>/v1/secret",
+	"token": ""
+}

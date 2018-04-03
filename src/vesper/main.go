@@ -18,6 +18,7 @@ import (
 	"vesper/configuration"
 	"vesper/rootcerts"
 	"vesper/sks"
+	"vesper/sticr"
 	"vesper/signcredentials"
 )
 
@@ -26,10 +27,11 @@ var (
 	rootCerts										*rootcerts.RootCerts
 	signingCredentials					*signcredentials.SigningCredentials
 	sksCredentials							*sks.SksCredentials
+	x5u													*sticr.SticrHost
 	httpClient									*http.Client
 	rootCertsTicker							*time.Ticker
 	signingCredentialsTicker		*time.Ticker
-	sksCredentialsTicker				*time.Ticker
+	sksSticrTicker							*time.Ticker
 	stopTicker									chan struct{}	
 )
 
@@ -93,8 +95,15 @@ func init() {
 		os.Exit(2)
 	}		
 
+	// initiatlize sticr object
+	x5u, err = sticr.InitObject(configuration.ConfigurationInstance().SticrHostFile)
+	if err != nil {
+		logCritical("Type=sticrConfig, Message=%v.... cannot start Vesper Service .... ", err)
+		os.Exit(2)
+	}	
+	
 	// After sks credentials object is successfully initialized, initiatlize rootcerts object
-	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, sksCredentials)
+	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, sksCredentials, x5u)
 	if err != nil {
 		logCritical("Type=signingCredentials, Message=%v.... cannot start Vesper Service .... ", err)
 		os.Exit(1)
@@ -113,11 +122,11 @@ func init() {
 	// ticks to make up for slow receiver.
 	// https://golang.org/pkg/time/#NewTicker
 	// To pull latest root certs from SKS
-	rootCertsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Minute)
+	rootCertsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Second)
 	// To pull current signing credentials - x5u and privatekey
-	signingCredentialsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Minute)
+	signingCredentialsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Second)
 	// To check on changes to sks URL or token
-	sksCredentialsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SksCredentialsFileCheckInterval)*time.Second)
+	sksSticrTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SksSticrFilesCheckInterval)*time.Second)
 	// initiatize channel of empty struct. send this empty struct to stop timer, close channel and exit go routine
 	stopTicker = make(chan struct{})	
 }
@@ -156,8 +165,9 @@ func main() {
 			case <- signingCredentialsTicker.C:	
 				// fetch current x5u and privatekey for signing. This will replace cached credentials
 				signingCredentials.FetchSigningCredentialsFromSks()
-			case <- sksCredentialsTicker.C:
+			case <- sksSticrTicker.C:
 				sksCredentials.UpdateSksCredentials()
+				x5u.UpdateSticrHost()
 			case <- stopTicker:
 				// Stop turns off a ticker. After Stop, no more ticks will be sent.
 				// Stop does not close the channel, to prevent a read from the channel succeeding incorrectly
@@ -165,7 +175,7 @@ func main() {
 				logInfo("Type=ntMgrTimerStop, Message=stopping all tickers and closing channel before exiting")
 				rootCertsTicker.Stop()
 				signingCredentialsTicker.Stop()
-				sksCredentialsTicker.Stop()
+				sksSticrTicker.Stop()
 				return
 			}
 		}

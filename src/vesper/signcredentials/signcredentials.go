@@ -10,15 +10,17 @@ import (
 	"net/http"
 	"vesper/configuration"
 	"vesper/sks"
+	"vesper/sticr"
 	"github.com/comcast/irislogger"
 )
 
 // globals
 var (
-	info										*irislogger.Logger
-	softwareVersion					string
-	httpClient							*http.Client
-	sksCredentials					*sks.SksCredentials
+	info							*irislogger.Logger
+	softwareVersion		string
+	httpClient				*http.Client
+	sksCredentials		*sks.SksCredentials
+	certRepo					*sticr.SticrHost
 )
 
 
@@ -42,11 +44,12 @@ type SigningCredentials struct {
 }
   
 // Initialize object
-func InitObject(i *irislogger.Logger, v string, h *http.Client, s *sks.SksCredentials) (*SigningCredentials, error) {
+func InitObject(i *irislogger.Logger, v string, h *http.Client, sk *sks.SksCredentials, cr *sticr.SticrHost) (*SigningCredentials, error) {
 	info = i
 	softwareVersion = v
 	httpClient = h
-	sksCredentials = s
+	sksCredentials = sk
+	certRepo = cr
 	sc := new(SigningCredentials)
 	var err error
 	sc.x5u, sc.privateKey, err = getSigningCredentialsFromSks()
@@ -117,15 +120,15 @@ func getSigningCredentialsFromSks() (string, string, error) {
 			switch r1 := data.(type) {
 			case map[string]interface{}:
 				// x5u
-				if r2, ok := r1["x5u"]; ok {
+				if r2, ok := r1["filename"]; ok {
 					switch r2.(type) {
 					case string:
-						x = r1["x5u"].(string)
+						x = certRepo.GetSticrHost() + "/" + r1["filename"].(string)
 					default:
-						return "", "", fmt.Errorf("GET %v response status - %v; \"x5u\" field MUST be a string in %+v returned by SKS", url, resp.Status, s)
+						return "", "", fmt.Errorf("GET %v response status - %v; \"filename\" field MUST be a string in %+v returned by SKS", url, resp.Status, s)
 					}
 				} else {
-					return "", "", fmt.Errorf("GET %v response status - %v; \"x5u\" field missing in in %+v returned by SKS", url, resp.Status, s)	
+					return "", "", fmt.Errorf("GET %v response status - %v; \"filename\" field missing in in %+v returned by SKS", url, resp.Status, s)	
 				}
 				// privateKey
 				if r2, ok := r1["privateKey"]; ok {
