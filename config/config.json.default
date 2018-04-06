@@ -2,12 +2,13 @@
 	"log_file" : "/var/log/vesper/vesper.log",
 	"log_file_max_size" : 50000000,
 	"host" : "",
-	"port" : "",
+	"http_host_port" : "",
 	"ssl_cert_file" : "",
 	"ssl_key_file" : "",
 	"root_certs_fetch_interval" : 60,
 	"signing_credentials_fetch_interval" : 60,
 	"sks_credentials_file" ; "",
 	"sticr_host_file" : "",
-	"sks_sticr_files_check_interval" : 60
+	"sks_sticr_files_check_interval" : 60,
+	"verify_root_ca" : false
 }

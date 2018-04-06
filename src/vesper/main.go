@@ -92,7 +92,7 @@ func init() {
 	sksCredentials, err = sks.InitObject(configuration.ConfigurationInstance().SksCredentialsFile)
 	if err != nil {
 		logCritical("Type=sksConfig, Message=%v.... cannot start Vesper Service .... ", err)
-		os.Exit(2)
+		os.Exit(1)
 	}		
 
 	// initiatlize sticr object
@@ -106,14 +106,14 @@ func init() {
 	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, sksCredentials, x5u)
 	if err != nil {
 		logCritical("Type=signingCredentials, Message=%v.... cannot start Vesper Service .... ", err)
-		os.Exit(1)
+		os.Exit(3)
 	}
 
 	// After sks credentials object is successfully initialized, initiatlize rootcerts object
 	rootCerts, err = rootcerts.InitObject(info, softwareVersion, httpClient, sksCredentials)
 	if err != nil {
 		logCritical("Type=rootCerts, Message=%v.... cannot start Vesper Service .... ", err)
-		os.Exit(1)
+		os.Exit(4)
 	}
 	
 	// start periodic tickers
@@ -197,15 +197,20 @@ func main() {
 	} else {
 		// Start HTTP server
 	 	go func() {
-			usePort := "80"
-			if configuration.ConfigurationInstance().Port != "" {
-				usePort = configuration.ConfigurationInstance().Port
+			hostPort := "127.0.0.1:80"
+			if configuration.ConfigurationInstance().HttpHostPort != "" {
+				parts := strings.Split(configuration.ConfigurationInstance().HttpHostPort, ":")
+				if len(parts) != 2 {
+					logError("Type=vesperHostPortFormatError, Message=config file contains invalid host-port format (%v) - should be [host:port].... cannot start Vesper Service .... ", configuration.ConfigurationInstance().HttpHostPort)
+					os.Exit(5)
+				}				
+				hostPort = configuration.ConfigurationInstance().HttpHostPort
 			}
-			logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on port %v ...", usePort)
+			logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on port %v ...", hostPort)
 			// Start the service.
 			// Note: netstats -plnt shows a IPv6 TCP socket listening on user specified port
 			//       but no IPv4 TCP socket. This is not an issue
-			srv := &http.Server{Addr: ":"+usePort, Handler: handler}
+			srv := &http.Server{Addr: hostPort, Handler: handler}
 			if err := srv.ListenAndServe(); err != nil {
 				logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
 				errs <- err

@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"github.com/httprouter"
 	"github.com/satori/go.uuid"
+	"vesper/configuration"
 )
 
 // VResponse -- for HTTP response codes used for more than one anomaly
@@ -294,11 +295,11 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = cc
 
 	// verify signature
-	err = verifySignature(x5u, token[0])
+	code, err := verifySignature(x5u, token[0], configuration.ConfigurationInstance().VerifyRootCA)
 	if err != nil {
 		logError("Type=vesperVerifySignature, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=error in verifying signature : %v", traceID, clientIP, err);
 		response.WriteHeader(http.StatusInternalServerError)
-		resp["verificationResponse"].(map[string]interface{})["reasonCode"] = "VESPER-0154"
+		resp["verificationResponse"].(map[string]interface{})["reasonCode"] = code
 		resp["verificationResponse"].(map[string]interface{})["reasonString"] = err.Error()
 	} else {
 		response.WriteHeader(http.StatusOK)

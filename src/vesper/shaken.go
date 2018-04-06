@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
@@ -136,44 +137,63 @@ func createSignature(h, c, p []byte) (string, string, error)  {
 // using  ES256 algorithm.
 // If the signature ois verified, the function returns nil. Otherwise,
 // an error message is returned
-func verifySignature(x5u, token string) error {
+func verifySignature(x5u, token string, verifyCA bool) (string, error) {
 	// Get the data each time
 	resp, err := http.Get(x5u)
 	if err != nil {
 		logError("%v", err)
-		return err
+		return "VESPER-0154", err
 	}
 	defer resp.Body.Close()
 	// Writer the body to buffer
 	cert_buffer, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logError("%v", err)
-		return err
+		return "VESPER-0155", err
 	}
 	block, _ := pem.Decode(cert_buffer)
 	if block == nil {
 		err = fmt.Errorf("no PEM data is found")
-		return err
+		return "VESPER-0156", err
 	}
 	// parse certificate
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return err
+		return "VESPER-0157", err
 	}
-
-	opts := x509.VerifyOptions{
-		Roots:  rootCerts.Root(),
+	now := time.Now()
+	opts := x509.VerifyOptions{CurrentTime: now,}
+	if verifyCA {
+		opts = x509.VerifyOptions{CurrentTime: now, Roots: rootCerts.Root(),}
 	}
-	
 	if _, err := cert.Verify(opts); err != nil {
-		return err
+		switch err.Error() {
+		case "x509: certificate has expired or is not yet valid":
+			return "VESPER-0158", err
+		case "x509: certificate signed by unknown authority" :
+			if verifyCA {
+				return "VESPER-0159", err
+			}
+		case "x509: certificate is not authorized to sign other certificates":
+			if verifyCA {
+				return "VESPER-0160", err
+			}
+		case "x509: issuer name does not match subject from issuing certificate":
+			if verifyCA {
+				return "VESPER-0161", err
+			}
+		default:
+			if verifyCA {
+				return "VESPER-0162", err
+			}
+		}
 	}
 		
 	// ES256
 	ecdsa_pub, ok := cert.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
 		err = fmt.Errorf("Value returned from ParsePKIXPublicKey was not an ECDSA public key")
-		return err
+		return "VESPER-0163", err
 	}
-	return verifyEC(token, ecdsa_pub)
+	return "VESPER-0164", verifyEC(token, ecdsa_pub)
 }

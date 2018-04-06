@@ -198,4 +198,14 @@ Example
 | VESPER-0151 | unable to unmarshal decoded JWT header |
 | VESPER-0152 | unable to base64 url decode claims part of JWT |
 | VESPER-0153 | unable to unmarshal decoded JWT claims |
-| VESPER-0154 | STRING WILL DEPEND ON ERROR DETECTED |
+| VESPER-0154 | http request to retrieve cert from sticr failed |
+| VESPER-0155 | error encountered reading response body |
+| VESPER-0156 | error encountered decoding cert retrieved from sticr |
+| VESPER-0157 | error encountered when parsing decoded pem data |
+| VESPER-0158 | certificate has expired or is not yet valid |
+| VESPER-0159 | certificate signed by unknown authority |
+| VESPER-0160 | certificate is not authorized to sign other certificates |
+| VESPER-0161 | issuer name does not match subject from issuing certificate |
+| VESPER-0162 | other errors - certificate issuer, unauthorized root/intermediate certificate,... |
+| VESPER-0163 | public key is not a ECDSA public key |
+| VESPER-0164 | error encountered in verifying signature|

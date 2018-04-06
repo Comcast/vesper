@@ -13,7 +13,7 @@ type Configuration struct {
 	LogFile							string									`json:"log_file"`
 	LogFileMaxSize			int64										`json:"log_file_max_size"`
 	Host								string									`json:"host"`
-	Port								string  								`json:"port"`
+	HttpHostPort				string  								`json:"http_host_port"`
 	SslCertFile					string									`json:"ssl_cert_file"`
 	SslKeyFile					string									`json:"ssl_key_file"`
 	RootCertsFetchInterval					int64				`json:"root_certs_fetch_interval"`
@@ -21,6 +21,7 @@ type Configuration struct {
 	SksCredentialsFile							string			`json:"sks_credentials_file"`
 	SticrHostFile										string			`json:"sticr_host_file"`
 	SksSticrFilesCheckInterval			int64				`json:"sks_sticr_files_check_interval"`
+	VerifyRootCA										bool				`json:"verify_root_ca"`
 }
 
 var configurationInstance *Configuration = nil
@@ -32,7 +33,7 @@ func ConfigurationInstance() *Configuration {
 			LogFile														: "/var/log/vesper/vesper.log",
 			LogFileMaxSize										: 50000000,
 			Host															: "",
-			Port															: "80",
+			HttpHostPort											: "",
 			SslCertFile												: "",
 			SslKeyFile												: "",
 			RootCertsFetchInterval						:	60,
@@ -40,6 +41,7 @@ func ConfigurationInstance() *Configuration {
 			SksCredentialsFile								: "",
 			SticrHostFile											: "",
 			SksSticrFilesCheckInterval				: 60,
+			VerifyRootCA											: false,
 		}
 		configurationInstance = config
 	}
