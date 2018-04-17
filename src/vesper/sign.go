@@ -37,13 +37,13 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 		// empty request body
 		logError("Type=vesperInvalidJson, TraceID=%v, ClientIP=%v, Module=signRequest, Message=empty request body", traceID, clientIP);
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-0001", ReasonString: "empty request body"}}
+		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-4001", ReasonString: "empty request body"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	case err != nil :
 		logError("Type=vesperInvalidJson, TraceID=%v, ClientIP=%v, Module=signRequest, Message=received invalid json", traceID, clientIP);
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-0002", ReasonString: "Unable to parse request body"}}
+		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-4002", ReasonString: "Unable to parse request body"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	default:
@@ -66,7 +66,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in converting header to byte array : %v", traceID, clientIP, err);
 		response.WriteHeader(http.StatusInternalServerError)
-		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-0050", ReasonString: "error in converting header to byte array"}}
+		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-5050", ReasonString: "error in converting header to byte array"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
@@ -74,7 +74,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in converting claims to byte array : %v", traceID, clientIP, err);
 		response.WriteHeader(http.StatusInternalServerError)
-		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-0051", ReasonString: "error in converting claims to byte array"}}
+		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-5051", ReasonString: "error in converting claims to byte array"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
@@ -82,7 +82,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	if err != nil {
 		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=error in signing request for request payload (%+v) : %v", traceID, clientIP, r, err);
 		response.WriteHeader(http.StatusInternalServerError)
-		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-0052", ReasonString: "error in signing request"}}
+		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: "VESPER-5052", ReasonString: "error in signing request"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}

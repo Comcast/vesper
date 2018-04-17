@@ -36,31 +36,31 @@ Example
 
 | reasonCode | reasonString |
 | ----- | ----- |
-| VESPER-0001 | empty request body |
-| VESPER-0002 | Unable to parse request body |
-| VESPER-0003 | one or more of the require fields missing in request payload |
-| VESPER-0004 | request payload has more than expected fields |
-| VESPER-0005 | attest field in request payload is an empty string |
-| VESPER-0006 | attest field in request payload is not as per SHAKEN spec |
-| VESPER-0007 | attest field in request payload MUST be a string |
-| VESPER-0008 | iat value in request payload is 0 |
-| VESPER-0009 | iat field in request payload MUST be a number |
-| VESPER-0010 | origid field in request payload is an empty string |
-| VESPER-0011 | origid field in request payload MUST be a string |
-| VESPER-0012 | orig in request payload is an empty object |
-| VESPER-0013 | orig in request payload should contain only one field |
-| VESPER-0014 | orig in request payload does not contain field \"tn\" |
-| VESPER-0015 | orig tn in request payload is not of type string |
-| VESPER-0016 | orig tn in request payload is an empty string |
-| VESPER-0017 | orig field in request payload MUST be a JSON object |
-| VESPER-0018 | dest in request payload is an empty object |
-| VESPER-0019 | dest in request payload should contain only one field |
-| VESPER-0020 | dest in request payload does not contain field \"tn\" |
-| VESPER-0021 | dest tn in request payload is an empty array |
-| VESPER-0022 | one or more dest tns in request payload is not a string |
-| VESPER-0023 | one or more dest tns in request payload is an empty string |
-| VESPER-0024 | dest tn in request payload is not an array |
-| VESPER-0025 | dest field in request payload MUST be a JSON object |
+| VESPER-4001 | empty request body |
+| VESPER-4002 | Unable to parse request body |
+| VESPER-4003 | one or more of the require fields missing in request payload |
+| VESPER-4004 | request payload has more than expected fields |
+| VESPER-4005 | attest field in request payload is an empty string |
+| VESPER-4006 | attest field in request payload is not as per SHAKEN spec |
+| VESPER-4007 | attest field in request payload MUST be a string |
+| VESPER-4008 | iat value in request payload is 0 |
+| VESPER-4009 | iat field in request payload MUST be a number |
+| VESPER-4010 | origid field in request payload is an empty string |
+| VESPER-4011 | origid field in request payload MUST be a string |
+| VESPER-4012 | orig in request payload is an empty object |
+| VESPER-4013 | orig in request payload should contain only one field |
+| VESPER-4014 | orig in request payload does not contain field \"tn\" |
+| VESPER-4015 | orig tn in request payload is not of type string |
+| VESPER-4016 | orig tn in request payload is an empty string |
+| VESPER-4017 | orig field in request payload MUST be a JSON object |
+| VESPER-4018 | dest in request payload is an empty object |
+| VESPER-4019 | dest in request payload should contain only one field |
+| VESPER-4020 | dest in request payload does not contain field \"tn\" |
+| VESPER-4021 | dest tn in request payload is an empty array |
+| VESPER-4022 | one or more dest tns in request payload is not a string |
+| VESPER-4023 | one or more dest tns in request payload is an empty string |
+| VESPER-4024 | dest tn in request payload is not an array |
+| VESPER-4025 | dest field in request payload MUST be a JSON object |
 
 ###### 500
 
@@ -76,9 +76,9 @@ Example
 
 | reasonCode | reasonString |
 | ----- | ----- |
-| VESPER-0050 | error in converting header to byte array |
-| VESPER-0051 | error in converting claims to byte array |
-| VESPER-0052 | error in signing request |
+| VESPER-5050 | error in converting header to byte array |
+| VESPER-5051 | error in converting claims to byte array |
+| VESPER-5052 | error in signing request |
 
 
 ### POST /stir/v1/verification
@@ -137,7 +137,7 @@ Example
 ```
 {
   "verificationResponse": {
-    "reasonCode": "VESPER-0100",
+    "reasonCode": "VESPER-4100",
     "reasonString": "Unable to parse request body"
   }
 }
@@ -145,67 +145,67 @@ Example
 
 | reasonCode | reasonString |
 | ----- | ----- |
-| VESPER-0100 | empty request body |
-| VESPER-0102 | Unable to parse request body |
-| VESPER-0103 | one or more of the require fields missing in request payload |
-| VESPER-0104 | request payload has more than expected fields |
-| VESPER-0105 | iat value in request payload is 0 |
-| VESPER-0106 | iat field in request payload MUST be a number |
-| VESPER-0107 | identity field in request payload is an empty string |
-| VESPER-0108 | attest field in request payload MUST be a string |
-| VESPER-0109 | orig in request payload is an empty object |
-| VESPER-0110 | orig in request payload should contain only one field |
-| VESPER-0111 | orig in request payload does not contain field \"tn\" |
-| VESPER-0112 | orig tn in request payload is an empty array |
-| VESPER-0113 | one or more orig tns in request payload is not a string |
-| VESPER-0114 | one or more orig tns in request payload is an empty string |
-| VESPER-0115 | orig tn in request payload is not an array |
-| VESPER-0116 | orig field in request payload MUST be a JSON object |
-| VESPER-0117 | dest in request payload is an empty object |
-| VESPER-0118 | dest in request payload should contain only one field |
-| VESPER-0119 | dest in request payload does not contain field \"tn\" |
-| VESPER-0120 | dest tn in request payload is an empty array |
-| VESPER-0121 | one or more dest tns in request payload is not a string |
-| VESPER-0122 | one or more dest tns in request payload is an empty string |
-| VESPER-0123 | dest tn in request payload is not an array |
-| VESPER-0124 | dest field in request payload MUST be a JSON object |
-| VESPER-0125 | Invalid JWT format in identity header in request payload |
-| VESPER-0126 | decoded header does not have the expected number of fields (4) |
-| VESPER-0127 | one or more of the required fields missing in JWT header |
-| VESPER-0128 | alg field value in JWT header is not \"ES256\" |
-| VESPER-0129 | alg field value in JWT header is not a string |
-| VESPER-0130 | ppt field value in JWT header is not \"shaken\" |
-| VESPER-0131 | ppt field value in JWT header is not a string |
-| VESPER-0132 | typ field value in JWT header is not \"passport\" |
-| VESPER-0133 | typ field value in JWT header is not a string |
-| VESPER-0134 | x5u field value in JWT header is not a string |
+| VESPER-4100 | empty request body |
+| VESPER-4102 | Unable to parse request body |
+| VESPER-4103 | one or more of the require fields missing in request payload |
+| VESPER-4104 | request payload has more than expected fields |
+| VESPER-4105 | iat value in request payload is 0 |
+| VESPER-4106 | iat field in request payload MUST be a number |
+| VESPER-4107 | identity field in request payload is an empty string |
+| VESPER-4108 | attest field in request payload MUST be a string |
+| VESPER-4109 | orig in request payload is an empty object |
+| VESPER-4110 | orig in request payload should contain only one field |
+| VESPER-4111 | orig in request payload does not contain field \"tn\" |
+| VESPER-4112 | orig tn in request payload is an empty array |
+| VESPER-4113 | one or more orig tns in request payload is not a string |
+| VESPER-4114 | one or more orig tns in request payload is an empty string |
+| VESPER-4115 | orig tn in request payload is not an array |
+| VESPER-4116 | orig field in request payload MUST be a JSON object |
+| VESPER-4117 | dest in request payload is an empty object |
+| VESPER-4118 | dest in request payload should contain only one field |
+| VESPER-4119 | dest in request payload does not contain field \"tn\" |
+| VESPER-4120 | dest tn in request payload is an empty array |
+| VESPER-4121 | one or more dest tns in request payload is not a string |
+| VESPER-4122 | one or more dest tns in request payload is an empty string |
+| VESPER-4123 | dest tn in request payload is not an array |
+| VESPER-4124 | dest field in request payload MUST be a JSON object |
+| VESPER-4125 | Invalid JWT format in identity header in request payload |
+| VESPER-4126 | decoded header does not have the expected number of fields (4) |
+| VESPER-4127 | one or more of the required fields missing in JWT header |
+| VESPER-4128 | alg field value in JWT header is not \"ES256\" |
+| VESPER-4129 | alg field value in JWT header is not a string |
+| VESPER-4130 | ppt field value in JWT header is not \"shaken\" |
+| VESPER-4131 | ppt field value in JWT header is not a string |
+| VESPER-4132 | typ field value in JWT header is not \"passport\" |
+| VESPER-4133 | typ field value in JWT header is not a string |
+| VESPER-4134 | x5u field value in JWT header is not a string |
+| VESPER-4150 | unable to base64 url decode header part of JWT |
+| VESPER-4151 | unable to unmarshal decoded JWT header |
+| VESPER-4152 | unable to base64 url decode claims part of JWT |
+| VESPER-4153 | unable to unmarshal decoded JWT claims |
+| VESPER-4154 | http request to retrieve cert from sticr failed |
+| VESPER-4155 | error encountered reading response body |
+| VESPER-4156 | error encountered decoding cert retrieved from sticr |
+| VESPER-4157 | error encountered when parsing decoded pem data |
+| VESPER-4158 | certificate has expired or is not yet valid |
+| VESPER-4159 | certificate signed by unknown authority |
+| VESPER-4160 | certificate is not authorized to sign other certificates |
+| VESPER-4161 | issuer name does not match subject from issuing certificate |
+| VESPER-4162 | other errors - certificate issuer, unauthorized root/intermediate certificate,... |
+| VESPER-4163 | public key is not a ECDSA public key |
 
-###### 500
+###### 401
 
 Example
 ```
 {
   "verificationResponse": {
-    "reasonCode": "VESPER-0150",
-    "reasonString": "unable to base64 url decode header part of JWT"
+    "reasonCode": "VESPER-4162",
+    "reasonString": "error encountered in verifying signature"
   }
 }
 ```
 
 | reasonCode | reasonString |
 | ----- | ----- |
-| VESPER-0150 | unable to base64 url decode header part of JWT |
-| VESPER-0151 | unable to unmarshal decoded JWT header |
-| VESPER-0152 | unable to base64 url decode claims part of JWT |
-| VESPER-0153 | unable to unmarshal decoded JWT claims |
-| VESPER-0154 | http request to retrieve cert from sticr failed |
-| VESPER-0155 | error encountered reading response body |
-| VESPER-0156 | error encountered decoding cert retrieved from sticr |
-| VESPER-0157 | error encountered when parsing decoded pem data |
-| VESPER-0158 | certificate has expired or is not yet valid |
-| VESPER-0159 | certificate signed by unknown authority |
-| VESPER-0160 | certificate is not authorized to sign other certificates |
-| VESPER-0161 | issuer name does not match subject from issuing certificate |
-| VESPER-0162 | other errors - certificate issuer, unauthorized root/intermediate certificate,... |
-| VESPER-0163 | public key is not a ECDSA public key |
-| VESPER-0164 | error encountered in verifying signature|
+| VESPER-4164 | error encountered in verifying signature|
