@@ -303,9 +303,8 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		resp["verificationResponse"].(map[string]interface{})["reasonString"] = err.Error()
 	} else {
 		response.WriteHeader(http.StatusOK)
+		json.NewEncoder(response).Encode(resp)
 	}
-	json.NewEncoder(response).Encode(resp)
-
 	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in verifyRequest() : %v", traceID, time.Since(start));
 }
 
