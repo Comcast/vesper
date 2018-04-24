@@ -169,16 +169,21 @@ Example
 | VESPER-4122 | one or more dest tns in request payload is an empty string |
 | VESPER-4123 | dest tn in request payload is not an array |
 | VESPER-4124 | dest field in request payload MUST be a JSON object |
-| VESPER-4125 | Invalid JWT format in identity header in request payload |
-| VESPER-4126 | decoded header does not have the expected number of fields (4) |
-| VESPER-4127 | one or more of the required fields missing in JWT header |
-| VESPER-4128 | alg field value in JWT header is not \"ES256\" |
-| VESPER-4129 | alg field value in JWT header is not a string |
-| VESPER-4130 | ppt field value in JWT header is not \"shaken\" |
-| VESPER-4131 | ppt field value in JWT header is not a string |
-| VESPER-4132 | typ field value in JWT header is not \"passport\" |
-| VESPER-4133 | typ field value in JWT header is not a string |
-| VESPER-4134 | x5u field value in JWT header is not a string |
+| VESPER-4125 | Identity field does not contain all the relevant parameters |
+| VESPER-4126 | Invalid JWT format in identity field |
+| VESPER-4127 | Invalid info parameter in identity field |
+| VESPER-4128 | Invalid alg parameter in identity field |
+| VESPER-4129 | Invalid ppt parameter in identity field |
+| VESPER-4130 | x5u value in JWT header does not match info parameter in identity field |
+| VESPER-4131 | decoded header does not have the expected number of fields (4) |
+| VESPER-4132 | one or more of the required fields missing in JWT header |
+| VESPER-4133 | alg field value in JWT header is not \"ES256\" |
+| VESPER-4134 | alg field value in JWT header is not a string |
+| VESPER-4135 | ppt field value in JWT header is not \"shaken\" |
+| VESPER-4136 | ppt field value in JWT header is not a string |
+| VESPER-4137 | typ field value in JWT header is not \"passport\" |
+| VESPER-4138 | typ field value in JWT header is not a string |
+| VESPER-4139 | x5u field value in JWT header is not a string |
 | VESPER-4150 | unable to base64 url decode header part of JWT |
 | VESPER-4151 | unable to unmarshal decoded JWT header |
 | VESPER-4152 | unable to base64 url decode claims part of JWT |

@@ -12,6 +12,7 @@ import (
 	"context"
 	"time"
 	"strings"
+	"regexp"
 	"github.com/httprouter"
 	"github.com/cors"
 	"github.com/comcast/irislogger"
@@ -32,7 +33,10 @@ var (
 	rootCertsTicker							*time.Ticker
 	signingCredentialsTicker		*time.Ticker
 	sksSticrTicker							*time.Ticker
-	stopTicker									chan struct{}	
+	stopTicker									chan struct{}
+	regexInfo										*regexp.Regexp
+	regexAlg										*regexp.Regexp
+	regexPpt										*regexp.Regexp
 )
 
 // ErrorBlob -- This is a standard error object
@@ -115,6 +119,11 @@ func init() {
 		logCritical("Type=rootCerts, Message=%v.... cannot start Vesper Service .... ", err)
 		os.Exit(4)
 	}
+	
+	// Compile the expression once
+	regexInfo = regexp.MustCompile(`^info=<..*>$`)
+	regexAlg = regexp.MustCompile(`^alg=ES256$`)
+	regexPpt = regexp.MustCompile(`^ppt=shaken$`)
 	
 	// start periodic tickers
 	// NewTicker returns a new Ticker containing a channel that will send the time with
