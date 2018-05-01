@@ -39,4 +39,5 @@ The following is the template for configuration file (in JSON format) that is re
 	"sks_credentials_file_check_interval" : 60,                              <--- INTERVAL IN SECONDS FOR VESPER TO CHECK DF SKS URL + PATH AND TOKEN HAS CHANGED SINCE LAST READ
 	"sticr_host_file" : "/usr/local/vesper/sticr.json",                      <--- FILE THAT CONTAINS STICR HOST URL + PATH
 	"verify_root_ca" : true or false                                         <--- IF FALSE, ROOT CERT VALIDATION IS NOT DONE
+}
 ```
