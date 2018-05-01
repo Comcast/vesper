@@ -33,7 +33,8 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	response.Header().Set("Trace-Id", traceID)
 
 	var iat uint64
-	var origTNs, destTNs []string
+	var origTN string
+	var destTNs []string
 	var identity string
 	// verify no query is present
 	// verify the request body is correct
@@ -42,13 +43,13 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	switch {
 	case err == io.EOF:
 		// empty request body
-		logError("Type=vesperInvalidJson, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=empty request body", traceID, clientIP);
+		logError("Type=vesperInvalidJson, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=empty request body", traceID, clientIP)
 		response.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4100", ReasonString: "empty request body"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	case err != nil :
-		logError("Type=vesperInvalidJson, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=received invalid json", traceID, clientIP);
+		logError("Type=vesperInvalidJson, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=received invalid json", traceID, clientIP)
 		response.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4102", ReasonString: "Unable to parse request body"}}
 		json.NewEncoder(response).Encode(jsonErr)
@@ -56,7 +57,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	default:
 		// err == nil
 		if !reflect.ValueOf(r["dest"]).IsValid() || !reflect.ValueOf(r["iat"]).IsValid() || !reflect.ValueOf(r["orig"]).IsValid() || !reflect.ValueOf(r["identity"]).IsValid() {
-			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more of the require fields missing in request payload (%+v)", traceID, clientIP, r);
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more of the require fields missing in request payload (%+v)", traceID, clientIP, r)
 			response.WriteHeader(http.StatusBadRequest)
 			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4103", ReasonString: "one or more of the require fields missing in request payload"}}
 			json.NewEncoder(response).Encode(jsonErr)
@@ -64,7 +65,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		}
 		// request payload should not contain more than the expected fields
 		if len(r) != 4 {
-			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=request payload (%+v) has more than expected fields", traceID, clientIP, r);
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=request payload (%+v) has more than expected fields", traceID, clientIP, r)
 			response.WriteHeader(http.StatusBadRequest)
 			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4104", ReasonString: "request payload has more than expected fields"}}
 			json.NewEncoder(response).Encode(jsonErr)
@@ -76,14 +77,14 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		case reflect.Float64:
 			iat = uint64(reflect.ValueOf(r["iat"]).Float())
 			if iat == 0 {
-				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=iat value in request payload is 0", traceID, clientIP, r);
+				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=iat value in request payload is 0", traceID, clientIP, r)
 				response.WriteHeader(http.StatusBadRequest)
 				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4105", ReasonString: "iat value in request payload is 0"}}
 				json.NewEncoder(response).Encode(jsonErr)
 				return
 			}
 		default:
-			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=iat field in request payload (%+v) MUST be a number", traceID, clientIP, r);
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=iat field in request payload (%+v) MUST be a number", traceID, clientIP, r)
 			response.WriteHeader(http.StatusBadRequest)
 			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4106", ReasonString: "iat field in request payload MUST be a number"}}
 			json.NewEncoder(response).Encode(jsonErr)
@@ -95,14 +96,14 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		case reflect.String:
 			identity = reflect.ValueOf(r["identity"]).String()
 			if len(strings.TrimSpace(identity)) == 0 {
-				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=identity field in request payload (%+v) is an empty string", traceID, clientIP, r);
+				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=identity field in request payload (%+v) is an empty string", traceID, clientIP, r)
 				response.WriteHeader(http.StatusBadRequest)
 				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4107", ReasonString: "identity field in request payload is an empty string"}}
 				json.NewEncoder(response).Encode(jsonErr)
 				return
 			}
 		default:
-			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=attest field in request payload (%+v) MUST be a string", traceID, clientIP, r);
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=signRequest, Message=attest field in request payload (%+v) MUST be a string", traceID, clientIP, r)
 			response.WriteHeader(http.StatusBadRequest)
 			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4108", ReasonString: "attest field in request payload MUST be a string"}}
 			json.NewEncoder(response).Encode(jsonErr)
@@ -115,13 +116,13 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			origKeys := reflect.ValueOf(r["orig"]).MapKeys()
 			switch {
 			case len(origKeys) == 0 :
-				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig in request payload (%+v) is an empty object", traceID, clientIP, r);
+				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig in request payload (%+v) is an empty object", traceID, clientIP, r)
 				response.WriteHeader(http.StatusBadRequest)
 				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4109", ReasonString: "orig in request payload is an empty object"}}
 				json.NewEncoder(response).Encode(jsonErr)
 				return
 			case len(origKeys) > 1 :
-				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig in request payload (%+v) should contain only one field", traceID, clientIP, r);
+				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig in request payload (%+v) should contain only one field", traceID, clientIP, r)
 				response.WriteHeader(http.StatusBadRequest)
 				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4110", ReasonString: "orig in request payload should contain only one field"}}
 				json.NewEncoder(response).Encode(jsonErr)
@@ -129,7 +130,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			default:
 				// field should be "tn" only
 				if origKeys[0].String() != "tn" {
-					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig in request payload (%+v) does not contain field \"tn\"", traceID, clientIP, r);
+					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig in request payload (%+v) does not contain field \"tn\"", traceID, clientIP, r)
 					response.WriteHeader(http.StatusBadRequest)
 					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4111", ReasonString: "orig in request payload does not contain field \"tn\""}}
 					json.NewEncoder(response).Encode(jsonErr)
@@ -141,45 +142,52 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					// empty array object
 					ot := reflect.ValueOf(r["orig"].(map[string]interface{})["tn"])
 					if ot.Len() == 0 {
-						logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn in request payload (%+v) is an empty array", traceID, clientIP, r);
+						logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn in request payload (%+v) is an empty array", traceID, clientIP, r)
 						response.WriteHeader(http.StatusBadRequest)
 						jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4112", ReasonString: "orig tn in request payload is an empty array"}}
 						json.NewEncoder(response).Encode(jsonErr)
 						return
 					}
 					// contains empty string
+					if ot.Len() != 1 {
+						logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn array contains more than one element in request payload (%+v)", traceID, clientIP, r)
+						response.WriteHeader(http.StatusBadRequest)
+						jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4113", ReasonString: "orig tn array contains more than one element in request payload"}}
+						json.NewEncoder(response).Encode(jsonErr)
+						return
+					}
 					for i := 0; i < ot.Len(); i++ {
 						tn := ot.Index(i).Elem()
 						if tn.Kind() != reflect.String {
-							logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more dest tns in request payload (%+v) is not a string", traceID, clientIP, r);
+							logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn in request payload (%+v) is not a string", traceID, clientIP, r)
 							response.WriteHeader(http.StatusBadRequest)
-							jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4113", ReasonString: "one or more orig tns in request payload is not a string"}}
+							jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4114", ReasonString: "orig tn in request payload is not a string"}}
 							json.NewEncoder(response).Encode(jsonErr)
 							return
 						} else {
 							if len(strings.TrimSpace(tn.String())) == 0 {
-								logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more orig tns in request payload (%+v) is an empty string", traceID, clientIP, r);
+								logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn in request payload (%+v) is an empty string", traceID, clientIP, r)
 								response.WriteHeader(http.StatusBadRequest)
-								jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4114", ReasonString: "one or more orig tns in request payload is an empty string"}}
+								jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4115", ReasonString: "orig tn in request payload is an empty string"}}
 								json.NewEncoder(response).Encode(jsonErr)
 								return
 							}
 							// append
-							origTNs = append(origTNs, tn.String())
+							origTN = tn.String()
 						}
 					}
 				default:
-					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn in request payload (%+v) is not an array", traceID, clientIP, r);
+					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig tn in request payload (%+v) is not an array", traceID, clientIP, r)
 					response.WriteHeader(http.StatusBadRequest)
-					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4115", ReasonString: "orig tn in request payload is not an array"}}
+					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4116", ReasonString: "orig tn in request payload is not an array"}}
 					json.NewEncoder(response).Encode(jsonErr)
 					return
 				}
 			}
 		default:
-			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig field in request payload (%+v) MUST be a JSON object", traceID, clientIP, r);
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=orig field in request payload (%+v) MUST be a JSON object", traceID, clientIP, r)
 			response.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4116", ReasonString: "orig field in request payload MUST be a JSON object"}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4117", ReasonString: "orig field in request payload MUST be a JSON object"}}
 			json.NewEncoder(response).Encode(jsonErr)
 			return
 		}
@@ -190,23 +198,23 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			destKeys := reflect.ValueOf(r["dest"]).MapKeys()
 			switch {
 			case len(destKeys) == 0 :
-				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest in request payload (%+v) is an empty object", traceID, clientIP, r);
+				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest in request payload (%+v) is an empty object", traceID, clientIP, r)
 				response.WriteHeader(http.StatusBadRequest)
-				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4117", ReasonString: "dest in request payload is an empty object"}}
+				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4118", ReasonString: "dest in request payload is an empty object"}}
 				json.NewEncoder(response).Encode(jsonErr)
 				return
 			case len(destKeys) > 1 :
-				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest in request payload (%+v) should contain only one field", traceID, clientIP, r);
+				logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest in request payload (%+v) should contain only one field", traceID, clientIP, r)
 				response.WriteHeader(http.StatusBadRequest)
-				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4118", ReasonString: "dest in request payload should contain only one field"}}
+				jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4119", ReasonString: "dest in request payload should contain only one field"}}
 				json.NewEncoder(response).Encode(jsonErr)
 				return
 			default:
 				// field should be "tn" only
 				if destKeys[0].String() != "tn" {
-					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest in request payload (%+v) does not contain field \"tn\"", traceID, clientIP, r);
+					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest in request payload (%+v) does not contain field \"tn\"", traceID, clientIP, r)
 					response.WriteHeader(http.StatusBadRequest)
-					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4119", ReasonString: "dest in request payload does not contain field \"tn\""}}
+					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4120", ReasonString: "dest in request payload does not contain field \"tn\""}}
 					json.NewEncoder(response).Encode(jsonErr)
 					return
 				}
@@ -216,9 +224,9 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					// empty array object
 					dt := reflect.ValueOf(r["dest"].(map[string]interface{})["tn"])
 					if dt.Len() == 0 {
-						logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest tn in request payload (%+v) is an empty array", traceID, clientIP, r);
+						logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest tn in request payload (%+v) is an empty array", traceID, clientIP, r)
 						response.WriteHeader(http.StatusBadRequest)
-						jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4120", ReasonString: "dest tn in request payload is an empty array"}}
+						jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4121", ReasonString: "dest tn in request payload is an empty array"}}
 						json.NewEncoder(response).Encode(jsonErr)
 						return
 					}
@@ -226,16 +234,16 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					for i := 0; i < dt.Len(); i++ {
 						tn := dt.Index(i).Elem()
 						if tn.Kind() != reflect.String {
-							logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more dest tns in request payload (%+v) is not a string", traceID, clientIP, r);
+							logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more dest tns in request payload (%+v) is not a string", traceID, clientIP, r)
 							response.WriteHeader(http.StatusBadRequest)
-							jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4121", ReasonString: "one or more dest tns in request payload is not a string"}}
+							jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4122", ReasonString: "one or more dest tns in request payload is not a string"}}
 							json.NewEncoder(response).Encode(jsonErr)
 							return
 						} else {
 							if len(strings.TrimSpace(tn.String())) == 0 {
-								logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more dest tns in request payload (%+v) is an empty string", traceID, clientIP, r);
+								logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=one or more dest tns in request payload (%+v) is an empty string", traceID, clientIP, r)
 								response.WriteHeader(http.StatusBadRequest)
-								jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4122", ReasonString: "one or more dest tns in request payload is an empty string"}}
+								jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4123", ReasonString: "one or more dest tns in request payload is an empty string"}}
 								json.NewEncoder(response).Encode(jsonErr)
 								return
 							}
@@ -244,17 +252,17 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 						}
 					}
 				default:
-					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest tn in request payload (%+v) is not an array", traceID, clientIP, r);
+					logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest tn in request payload (%+v) is not an array", traceID, clientIP, r)
 					response.WriteHeader(http.StatusBadRequest)
-					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4123", ReasonString: "dest tn in request payload is not an array"}}
+					jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4124", ReasonString: "dest tn in request payload is not an array"}}
 					json.NewEncoder(response).Encode(jsonErr)
 					return
 				}
 			}
 		default:
-			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest field in request payload (%+v) MUST be a JSON object", traceID, clientIP, r);
+			logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=dest field in request payload (%+v) MUST be a JSON object", traceID, clientIP, r)
 			response.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4124", ReasonString: "dest field in request payload MUST be a JSON object"}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4125", ReasonString: "dest field in request payload MUST be a JSON object"}}
 			json.NewEncoder(response).Encode(jsonErr)
 			return
 		}
@@ -265,43 +273,43 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	token := strings.Split(identity, ";")
 	// validate identity field
 	if len(token) != 4 {
-		logError("Type=vesperIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Identity field does not contain all the relevant parameters in request payload (%+v)", traceID, clientIP, r);
+		logError("Type=vesperIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Identity field does not contain all the relevant parameters in request payload (%+v)", traceID, clientIP, r)
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4125", ReasonString: "Identity field does not contain all the relevant parameters in request payload"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4126", ReasonString: "Identity field does not contain all the relevant parameters in request payload"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
 	// JWT
 	jwt := strings.Split(token[0], ".")
 	if len(jwt) != 3 {
-		logError("Type=vesperJwtInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid JWT format in identity field in request payload (%+v)", traceID, clientIP, r);
+		logError("Type=vesperJwtInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid JWT format in identity field in request payload (%+v)", traceID, clientIP, r)
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4126", ReasonString: "Invalid JWT format in identity field in request payload"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4127", ReasonString: "Invalid JWT format in identity field in request payload"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
 	// Info parameter
 	if !regexInfo.MatchString(token[1]) {
-		logError("Type=vesperInfoInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid info parameter in identity field in request payload (%+v)", traceID, clientIP, r);
+		logError("Type=vesperInfoInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid info parameter in identity field in request payload (%+v)", traceID, clientIP, r)
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4127", ReasonString: "Invalid info parameter in identity field in request payload"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4128", ReasonString: "Invalid info parameter in identity field in request payload"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return		
 	}
 	info := token[1][6:len(token[1])-1]
 	// alg
 	if !regexAlg.MatchString(token[2]) {
-		logError("Type=vesperAlgInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid alg parameter in identity field in request payload (%+v)", traceID, clientIP, r);
+		logError("Type=vesperAlgInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid alg parameter in identity field in request payload (%+v)", traceID, clientIP, r)
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4128", ReasonString: "Invalid alg parameter in identity field in request payload"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4129", ReasonString: "Invalid alg parameter in identity field in request payload"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return		
 	}
 	// ppt
 	if !regexPpt.MatchString(token[3]) {
-		logError("Type=vesperPptInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid ppt parameter in identity field in request payload (%+v)", traceID, clientIP, r);
+		logError("Type=vesperPptInIdentity, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=Invalid ppt parameter in identity field in request payload (%+v)", traceID, clientIP, r)
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4129", ReasonString: "Invalid ppt parameter in identity field in request payload"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4130", ReasonString: "Invalid ppt parameter in identity field in request payload"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return		
 	}
@@ -315,15 +323,15 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	}
 	// compare x5u and info
 	if x5u != info {
-		logError("Type=vesperX5uInfoUrl, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=x5u value (%v) in JWT header does not match info parameter in identity field in request payload (%+v)", traceID, clientIP, x5u, r);
+		logError("Type=vesperX5uInfoUrl, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=x5u value (%v) in JWT header does not match info parameter in identity field in request payload (%+v)", traceID, clientIP, x5u, r)
 		response.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4130", ReasonString: "x5u value in JWT header does not match info parameter in identity field in request payload"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4131", ReasonString: "x5u value in JWT header does not match info parameter in identity field in request payload"}}
 		json.NewEncoder(response).Encode(jsonErr)
 		return		
 	}	
 	
 	// extract claims from JWT for validation
-	cc, err := validateClaims(response, traceID, clientIP, token[0], origTNs, destTNs, iat)
+	cc, err := validateClaims(response, traceID, clientIP, token[0], origTN, destTNs, iat)
 	if err != nil {
 		// function writes to http.ResponseWriter directly
 		return
@@ -341,7 +349,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	// verify signature
 	code, errCode, err := verifySignature(x5u, token[0], configuration.ConfigurationInstance().VerifyRootCA)
 	if err != nil {
-		logError("Type=vesperVerifySignature, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=error in verifying signature : %v", traceID, clientIP, err);
+		logError("Type=vesperVerifySignature, TraceID=%v, ClientIP=%v, Module=verifyRequest, Message=error in verifying signature : %v", traceID, clientIP, err)
 		response.WriteHeader(errCode)
 		resp["verificationResponse"].(map[string]interface{})["reasonCode"] = code
 		resp["verificationResponse"].(map[string]interface{})["reasonString"] = err.Error()
@@ -349,7 +357,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		response.WriteHeader(http.StatusOK)
 		json.NewEncoder(response).Encode(resp)
 	}
-	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in verifyRequest() : %v", traceID, time.Since(start));
+	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in verifyRequest() : %v", traceID, time.Since(start))
 }
 
 // validateHeader - validate JWT header
@@ -360,7 +368,7 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	// s[0] is the encoded header
 	h, err := base64Decode(s[0])
 	if err != nil {
-		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=unable to base64 url decode header part of JWT : %v", traceID, clientIP, err);
+		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=unable to base64 url decode header part of JWT : %v", traceID, clientIP, err)
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4150", ReasonString: "unable to base64 url decode header part of JWT "}}
 		json.NewEncoder(w).Encode(jsonErr)
@@ -368,7 +376,7 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(h, &m); err != nil {
-		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=unable to unmarshal decoded header to map[string]interface{} : %v", traceID, clientIP, err);
+		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=unable to unmarshal decoded header to map[string]interface{} : %v", traceID, clientIP, err)
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4151", ReasonString: "unable to unmarshal decoded JWT header"}}
 		json.NewEncoder(w).Encode(jsonErr)
@@ -376,17 +384,17 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	}
 	if len(m) != 4 {
 		// not the expected number of fields in header
-		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=decoded header does not have the expected number of fields (4)", traceID, clientIP);
+		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=decoded header does not have the expected number of fields (4)", traceID, clientIP)
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4131", ReasonString: "decoded header does not have the expected number of fields (4)"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4132", ReasonString: "decoded header does not have the expected number of fields (4)"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("decoded header does not have the expected number of fields (4)")
 	}
 	// err == nil
 	if !reflect.ValueOf(m["alg"]).IsValid() || !reflect.ValueOf(m["ppt"]).IsValid() || !reflect.ValueOf(m["typ"]).IsValid() || !reflect.ValueOf(m["x5u"]).IsValid() {
-		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=one or more of the required fields missing in JWT header (%+v)", traceID, clientIP, m);
+		logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=one or more of the required fields missing in JWT header (%+v)", traceID, clientIP, m)
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4132", ReasonString: "one or more of the required fields missing in JWT header"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4133", ReasonString: "one or more of the required fields missing in JWT header"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("one or more of the required fields missing in JWT header")
 	}
@@ -396,16 +404,16 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	case reflect.String:
 		alg := reflect.ValueOf(m["alg"]).String()
 		if alg != "ES256" {
-			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=alg field value (%v) in JWT header is not \"ES256\"", traceID, clientIP, alg);
+			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=alg field value (%v) in JWT header is not \"ES256\"", traceID, clientIP, alg)
 			w.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4133", ReasonString: "alg field value in JWT header is not \"ES256\""}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4134", ReasonString: "alg field value in JWT header is not \"ES256\""}}
 			json.NewEncoder(w).Encode(jsonErr)
 			return "", nil, fmt.Errorf("alg field value in JWT header is not \"ES256\"")
 		}
 	default:
-		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=alg field value (%v) in JWT header is not a string", traceID, clientIP, m);
+		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=alg field value (%v) in JWT header is not a string", traceID, clientIP, m)
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4134", ReasonString: "alg field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4135", ReasonString: "alg field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("alg field value in JWT header is not a string")
 	}
@@ -415,16 +423,16 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	case reflect.String:
 		ppt := reflect.ValueOf(m["ppt"]).String()
 		if ppt != "shaken" {
-			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=ppt field value (%v) in JWT header is not \"shaken\"", traceID, clientIP, ppt);
+			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=ppt field value (%v) in JWT header is not \"shaken\"", traceID, clientIP, ppt)
 			w.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4135", ReasonString: "ppt field value in JWT header is not \"shaken\""}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4136", ReasonString: "ppt field value in JWT header is not \"shaken\""}}
 			json.NewEncoder(w).Encode(jsonErr)
 			return "", nil, fmt.Errorf("ppt field value in JWT header is not \"shaken\"")
 		}
 	default:
-		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=ppt field value (%v) in JWT header is not a string", traceID, clientIP, m);
+		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=ppt field value (%v) in JWT header is not a string", traceID, clientIP, m)
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4136", ReasonString: "ppt field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4137", ReasonString: "ppt field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("ppt field value in JWT header is not a string")
 	}
@@ -434,16 +442,16 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	case reflect.String:
 		typ := reflect.ValueOf(m["typ"]).String()
 		if typ != "passport" {
-			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=typ field value (%v) in JWT header is not \"passport\"", traceID, clientIP, typ);
+			logError("Type=vesperJWTHeader, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=typ field value (%v) in JWT header is not \"passport\"", traceID, clientIP, typ)
 			w.WriteHeader(http.StatusBadRequest)
-			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4137", ReasonString: "typ field value in JWT header is not \"passport\""}}
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4138", ReasonString: "typ field value in JWT header is not \"passport\""}}
 			json.NewEncoder(w).Encode(jsonErr)
 			return "", nil, fmt.Errorf("typ field value in JWT header is not \"passport\"")
 		}
 	default:
-		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=typ field value (%v) in JWT header is not a string", traceID, clientIP, m);
+		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=typ field value (%v) in JWT header is not a string", traceID, clientIP, m)
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4138", ReasonString: "typ field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4139", ReasonString: "typ field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("typ field value in JWT header is not a string")
 	}
@@ -453,9 +461,9 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 	case reflect.String:
 		x5u = reflect.ValueOf(m["x5u"]).String()
 	default:
-		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=x5u field value (%v) in JWT header is not a string", traceID, clientIP, m);
+		logError("Type=vesperRequestPayload, TraceID=%v, ClientIP=%v, Module=validateHeader, Message=x5u field value (%v) in JWT header is not a string", traceID, clientIP, m)
 		w.WriteHeader(http.StatusBadRequest)
-		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4139", ReasonString: "x5u field value in JWT header is not a string"}}
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4140", ReasonString: "x5u field value in JWT header is not a string"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return "", nil, fmt.Errorf("x5u field value in JWT header is not a string")
 	}
@@ -465,13 +473,13 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 
 // validateClaims - validate JWT claims
 // check if expected key-values exist
-func validateClaims(w http.ResponseWriter, traceID, clientIP, j string, oTNs, dTNs []string, iat uint64) (map[string]interface{}, error) {
-	logInfo("oTNS %+v dTNS %+v iat %v TOKEN %v", oTNs, dTNs, iat, j)
+func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTNs []string, iat uint64) (map[string]interface{}, error) {
+	logInfo("oTN %v dTNS %+v iat %v TOKEN %v", oTN, dTNs, iat, j)
 	s := strings.Split(j, ".")
 	// s[0] is the encoded claims
 	c, err := base64Decode(s[1])
 	if err != nil {
-		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=validateClaims, Message=unable to base64 url decode claims part of JWT : %v", traceID, clientIP, err);
+		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=validateClaims, Message=unable to base64 url decode claims part of JWT : %v", traceID, clientIP, err)
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4152", ReasonString: "unable to base64 url decode claims part of JWT "}}
 		json.NewEncoder(w).Encode(jsonErr)
@@ -479,20 +487,54 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j string, oTNs, dT
 	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(c, &m); err != nil {
-		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=validateClaims, Message=unable to unmarshal decoded claims to map[string]interface{} : %v", traceID, clientIP, err);
+		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=validateClaims, Message=unable to unmarshal decoded claims to map[string]interface{} : %v", traceID, clientIP, err)
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4153", ReasonString: "unable to unmarshal decoded JWT claims"}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return nil, err
 	}
 	//origTNInClaims, iatInClaims, destTNsInClaims, err := validatePayload(w, m, traceID, clientIP)
-	_, _, _, _, errCode, err := validatePayload(m, traceID, clientIP)
+	_, origTNInClaims, _, destTNsInClaims, errCode, err := validatePayload(m, traceID, clientIP)
 	if err != nil {
 		// ResponseWriter has been updated in the function
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: errCode, ReasonString: err.Error()}}
 		json.NewEncoder(w).Encode(jsonErr)
 		return nil, err
+	}
+	// validate orig TN
+	if origTNInClaims != oTN {
+		es := fmt.Sprintf("orig TN %v in request payload does not match orig TN %v in JWT claims", oTN, origTNInClaims)
+		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=validateClaims, Message=%v", traceID, clientIP, es)
+		w.WriteHeader(http.StatusBadRequest)
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4154", ReasonString: "orig TN in request payload does not match orig TN in JWT claims"}}
+		json.NewEncoder(w).Encode(jsonErr)
+		return nil, fmt.Errorf("%v", es)
+	}
+	// validate dest TNs
+	isMatch := false
+	if len(dTNs) == len(destTNsInClaims) {
+		for _, v := range dTNs {
+			// reset 
+			isMatch = false
+			for _, vv := range destTNsInClaims {
+				if v == vv {
+					isMatch = true
+					break
+				} 
+			}
+			if !isMatch {
+				break
+			}
+		}
+	}
+	if !isMatch {
+		es := fmt.Sprintf("dest TNs %+v in request payload does not match dest TNs %+v in JWT claims", dTNs, destTNsInClaims)
+		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=validateClaims, Message=%v", traceID, clientIP, es)
+		w.WriteHeader(http.StatusBadRequest)
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4155", ReasonString: "dest TNs in request payload does not match dest TNs in JWT claims"}}
+		json.NewEncoder(w).Encode(jsonErr)
+		return nil, fmt.Errorf("%v", es)
 	}
 	return m, nil
 }

@@ -144,8 +144,8 @@ func init() {
 func main() {
 	logInfo("Type=vesperStart, Message=Starting vesper .... ")
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-	signal.Notify(stop, syscall.SIGTERM)
+	signal.Ignore(syscall.SIGPIPE)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	router := httprouter.New()
 	router.GET("/v1/version", version)
