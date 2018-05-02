@@ -197,7 +197,7 @@ func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 	}
 	err = verifyEC(token, ecdsa_pub)
 	if err != nil {
-		return "VESPER-4164", http.StatusUnauthorized, err
+		return "VESPER-4166", http.StatusUnauthorized, err
 	}
 	return "", http.StatusOK, nil
 }
