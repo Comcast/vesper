@@ -339,13 +339,6 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 
 	resp := make(map[string]interface{})
 	resp["verificationResponse"] = make(map[string]interface{})
-	resp["verificationResponse"].(map[string]interface{})["dest"] = r["dest"]
-	resp["verificationResponse"].(map[string]interface{})["iat"] = r["iat"]
-	resp["verificationResponse"].(map[string]interface{})["orig"] = r["orig"]
-	resp["verificationResponse"].(map[string]interface{})["jwt"] = make(map[string]interface{})
-	resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["header"] = hh
-	resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = cc
-
 	// verify signature
 	code, errCode, err := verifySignature(x5u, token[0], configuration.ConfigurationInstance().VerifyRootCA)
 	if err != nil {
@@ -355,6 +348,12 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		resp["verificationResponse"].(map[string]interface{})["reasonString"] = err.Error()
 	} else {
 		response.WriteHeader(http.StatusOK)
+		resp["verificationResponse"].(map[string]interface{})["dest"] = r["dest"]
+		resp["verificationResponse"].(map[string]interface{})["iat"] = r["iat"]
+		resp["verificationResponse"].(map[string]interface{})["orig"] = r["orig"]
+		resp["verificationResponse"].(map[string]interface{})["jwt"] = make(map[string]interface{})
+		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["header"] = hh
+		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = cc
 	}
 	json.NewEncoder(response).Encode(resp)
 	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in verifyRequest() : %v", traceID, time.Since(start))
