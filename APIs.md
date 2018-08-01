@@ -191,18 +191,19 @@ Example
 | VESPER-4153 | unable to unmarshal decoded JWT claims |
 | VESPER-4154 | orig TN in request payload does not match orig TN in JWT claims |
 | VESPER-4155 | dest TNs in request payload does not match dest TNs in JWT claims |
-| VESPER-4156 | iat value indicates stale date |
-| VESPER-4157 | same origid in JWT claims; possible replay attack |
-| VESPER-4200 | http request to retrieve cert from sticr failed |
-| VESPER-4201 | error encountered reading response body |
-| VESPER-4202 | error encountered decoding cert retrieved from sticr |
-| VESPER-4203 | error encountered when parsing decoded pem data |
-| VESPER-4204 | certificate has expired or is not yet valid |
-| VESPER-4205 | certificate signed by unknown authority |
-| VESPER-4206 | certificate is not authorized to sign other certificates |
-| VESPER-4207 | issuer name does not match subject from issuing certificate |
-| VESPER-4208 | other errors - certificate issuer, unauthorized root/intermediate certificate,... |
-| VESPER-4209 | public key is not a ECDSA public key |
+| VESPER-4156 | http request to retrieve cert from sticr failed |
+| VESPER-4157 | error encountered reading response body |
+| VESPER-4158 | error encountered decoding cert retrieved from sticr |
+| VESPER-4159 | error encountered when parsing decoded pem data |
+| VESPER-4160 | certificate has expired or is not yet valid |
+| VESPER-4161 | certificate signed by unknown authority |
+| VESPER-4162 | certificate is not authorized to sign other certificates |
+| VESPER-4163 | issuer name does not match subject from issuing certificate |
+| VESPER-4164 | other errors - certificate issuer, unauthorized root/intermediate certificate,... |
+| VESPER-4165 | public key is not a ECDSA public key |
+| VESPER-4167 | iat value indicates stale date |
+| VESPER-4168 | same origid in JWT claims; possible replay attack |
+
 
 ###### 401
 
@@ -218,4 +219,4 @@ Example
 
 | reasonCode | reasonString |
 | ----- | ----- |
-| VESPER-4210 | error encountered in verifying signature|
+| VESPER-4166 | error encountered in verifying signature|
