@@ -151,6 +151,11 @@ func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 		logError("%v", err)
 		return "VESPER-4157", http.StatusBadRequest, err
 	}
+	switch resp.StatusCode {
+	case 200:
+	default:
+		return "VESPER-4156", http.StatusBadRequest, fmt.Errorf("%v", string(cert_buffer))
+	}
 	block, _ := pem.Decode(cert_buffer)
 	if block == nil {
 		err = fmt.Errorf("no PEM data is found")
