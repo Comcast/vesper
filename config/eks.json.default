@@ -1,0 +1,8 @@
+{
+	"aum": {
+		"url": https://<FQDN/CNAME>/v1.1/login",
+		"key": "",
+		"secret": ""
+	},
+	"eks": "https://<FQDN/CNAME>"
+}

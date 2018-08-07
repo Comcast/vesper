@@ -35,9 +35,11 @@ The following is the template for configuration file (in JSON format) that is re
 	"http_host_port: "",                                                     <--- (HTTP ONLY) IS APPLICABLE ONLY IF SSL CERT AND KEY FILE IS NOT AVAILABLE
 	"root_certs_fetch_interval": 60,                                         <--- INTERVAL IN SECONDS FOR VESPER TO FETCH ROOT CERTS FROM SKS
 	"signing_credentials_fetch_interval": 60,                                <--- INTERVAL IN SECONDS FOR VESPER TO FETCH FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING
-	"sks_credentials_file": "/usr/local/vesper/sks.json",                    <--- FILE THAT CONTAINS SKS URL + PATH AND TOKEN REQUIRED TO FETCH ROOT CERTS AS WELL AS FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING
-	"sks_credentials_file_check_interval" : 60,                              <--- INTERVAL IN SECONDS FOR VESPER TO CHECK DF SKS URL + PATH AND TOKEN HAS CHANGED SINCE LAST READ
+	"eks_credentials_file": "/usr/local/vesper/eks.json",                    <--- FILE THAT CONTAINS SKS URL + PATH AND TOKEN REQUIRED TO FETCH ROOT CERTS AS WELL AS FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING
+	"eks_credentials_file_check_interval" : 60,                              <--- INTERVAL IN MINUTES FOR VESPER TO CHECK AUM URL, KEY, SECRET AND/OR EKS URL HAS CHANGED. SERVER JWT TO CALL EKS APIS IS REFRESHED AS WELL
 	"sticr_host_file" : "/usr/local/vesper/sticr.json",                      <--- FILE THAT CONTAINS STICR HOST URL + PATH
-	"verify_root_ca" : true or false                                         <--- IF FALSE, ROOT CERT VALIDATION IS NOT DONE
+	"sticr_file_check_interval" : 60,                                        <--- INTERVAL IN MINUTES FOR VESPER TO CHECK IF SIICR URL HAS CHANGED
+	"verify_root_ca" : true or false                                         <--- (VERIFICATION ONLY) IF FALSE, VERIFICATION, ROOT CERT VALIDATION IS NOT DONE
+	"validate_stale_date" : true or false                                    <--- (VERIFICATION ONLY) IF FALSE, STALE DATE VALIDATION IS NOT DONE ON THE IAT VALUE (WHEN CURRENT TIME EXCEEEDS IAT VALUE BY MORE THAN 60 SECONDS)
 }
 ```

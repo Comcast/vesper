@@ -49,7 +49,7 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	default:
 		// err == nil. continue
 	}
-	orderedMap, _, _, _, errCode, err := validatePayload(r, traceID, clientIP)
+	orderedMap, _, _, _, _, errCode, err := validatePayload(r, traceID, clientIP)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
 		jsonErr := SResponse{SigningResponse : ErrorBlob{ReasonCode: errCode, ReasonString: err.Error()}}

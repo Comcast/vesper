@@ -493,7 +493,7 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		return nil, err
 	}
 	//origTNInClaims, iatInClaims, destTNsInClaims, err := validatePayload(w, m, traceID, clientIP)
-	_, origTNInClaims, _, destTNsInClaims, errCode, err := validatePayload(m, traceID, clientIP)
+	orderedMap, origTNInClaims, iatInClaims, destTNsInClaims, _, errCode, err := validatePayload(m, traceID, clientIP)
 	if err != nil {
 		// ResponseWriter has been updated in the function
 		w.WriteHeader(http.StatusBadRequest)
@@ -535,5 +535,16 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		json.NewEncoder(w).Encode(jsonErr)
 		return nil, fmt.Errorf("%v", es)
 	}
-	return m, nil
+	// iat in JWT validation
+	if configuration.ConfigurationInstance().ValidateStaleDate {
+		if (t > (iatInClaims + 60)) {
+			es := fmt.Sprintf("iat value (%v seconds) in JWT claims indicates stale date", iatInClaims)
+			logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=verifyRequest, ReasonCode=VESPER-4156, ReasonString=%v", traceID, clientIP, es)
+			w.WriteHeader(http.StatusBadRequest)
+			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4167", ReasonString: "iat value in JWT claims indicates stale date"}}
+			json.NewEncoder(w).Encode(jsonErr)
+			return nil, fmt.Errorf("%v", es)
+		}
+	}
+	return orderedMap, nil
 }

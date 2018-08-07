@@ -18,10 +18,12 @@ type Configuration struct {
 	SslKeyFile					string									`json:"ssl_key_file"`
 	RootCertsFetchInterval					int64				`json:"root_certs_fetch_interval"`
 	SigningCredentialsFetchInterval int64				`json:"signing_credentials_fetch_interval"`
-	SksCredentialsFile							string			`json:"sks_credentials_file"`
+	EksCredentialsFile							string			`json:"eks_credentials_file"`
+	EksCredentialsRefreshInterval		int64				`json:"eks_credentials_refresh_interval"`
 	SticrHostFile										string			`json:"sticr_host_file"`
-	SksSticrFilesCheckInterval			int64				`json:"sks_sticr_files_check_interval"`
+	SticrFileCheckInterval					int64				`json:"sticr_file_check_interval"`
 	VerifyRootCA										bool				`json:"verify_root_ca"`
+	ValidateStaleDate								bool				`json:"validate_stale_date"`
 }
 
 var configurationInstance *Configuration = nil
@@ -38,10 +40,12 @@ func ConfigurationInstance() *Configuration {
 			SslKeyFile												: "",
 			RootCertsFetchInterval						:	60,
 			SigningCredentialsFetchInterval		:	60,
-			SksCredentialsFile								: "",
+			EksCredentialsFile								: "",
+			EksCredentialsRefreshInterval			: 60,
 			SticrHostFile											: "",
-			SksSticrFilesCheckInterval				: 60,
-			VerifyRootCA											: false,
+			SticrFileCheckInterval						: 60,
+			VerifyRootCA											: true,
+			ValidateStaleDate									: true,
 		}
 		configurationInstance = config
 	}

@@ -18,25 +18,23 @@ import (
 	"github.com/comcast/irislogger"
 	"vesper/configuration"
 	"vesper/rootcerts"
-	"vesper/sks"
+	"vesper/eks"
 	"vesper/sticr"
 	"vesper/signcredentials"
+	"vesper/cache"
 )
 
 var (
 	info												*irislogger.Logger
 	rootCerts										*rootcerts.RootCerts
 	signingCredentials					*signcredentials.SigningCredentials
-	sksCredentials							*sks.SksCredentials
+	eksCredentials							*eks.EksCredentials
 	x5u													*sticr.SticrHost
 	httpClient									*http.Client
-	rootCertsTicker							*time.Ticker
-	signingCredentialsTicker		*time.Ticker
-	sksSticrTicker							*time.Ticker
-	stopTicker									chan struct{}
 	regexInfo										*regexp.Regexp
 	regexAlg										*regexp.Regexp
 	regexPpt										*regexp.Regexp
+	identityCache								*cache.IdentityCache
 )
 
 // ErrorBlob -- This is a standard error object
@@ -90,12 +88,12 @@ func init() {
 	}
 
 	// create http client object once - to be reused
-	httpClient = &http.Client{}
+	httpClient = &http.Client{Timeout: time.Duration(2 * time.Second)}
 	
 	// initiatlize sks credentials object
-	sksCredentials, err = sks.InitObject(configuration.ConfigurationInstance().SksCredentialsFile)
+	eksCredentials, err = eks.InitObject(configuration.ConfigurationInstance().EksCredentialsFile)
 	if err != nil {
-		logCritical("Type=sksConfig, Message=%v.... cannot start Vesper Service .... ", err)
+		logCritical("Type=eksConfig, Message=%v.... cannot start Vesper Service .... ", err)
 		os.Exit(1)
 	}		
 
@@ -107,37 +105,26 @@ func init() {
 	}	
 	
 	// After sks credentials object is successfully initialized, initiatlize rootcerts object
-	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, sksCredentials, x5u)
+	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, eksCredentials, x5u)
 	if err != nil {
 		logCritical("Type=signingCredentials, Message=%v.... cannot start Vesper Service .... ", err)
 		os.Exit(3)
 	}
 
 	// After sks credentials object is successfully initialized, initiatlize rootcerts object
-	rootCerts, err = rootcerts.InitObject(info, softwareVersion, httpClient, sksCredentials)
+	rootCerts, err = rootcerts.InitObject(info, softwareVersion, httpClient, eksCredentials)
 	if err != nil {
 		logCritical("Type=rootCerts, Message=%v.... cannot start Vesper Service .... ", err)
 		os.Exit(4)
 	}
 	
+	// instantiate map which will cache identity headers in request payload during verification
+	identityCache = cache.InitObject()
+	
 	// Compile the expression once
 	regexInfo = regexp.MustCompile(`^info=<..*>$`)
 	regexAlg = regexp.MustCompile(`^alg=ES256$`)
 	regexPpt = regexp.MustCompile(`^ppt=shaken$`)
-	
-	// start periodic tickers
-	// NewTicker returns a new Ticker containing a channel that will send the time with
-	// a period specified by the duration argument. It adjusts the intervals or drops
-	// ticks to make up for slow receiver.
-	// https://golang.org/pkg/time/#NewTicker
-	// To pull latest root certs from SKS
-	rootCertsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Second)
-	// To pull current signing credentials - x5u and privatekey
-	signingCredentialsTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Second)
-	// To check on changes to sks URL or token
-	sksSticrTicker = time.NewTicker(time.Duration(configuration.ConfigurationInstance().SksSticrFilesCheckInterval)*time.Second)
-	// initiatize channel of empty struct. send this empty struct to stop timer, close channel and exit go routine
-	stopTicker = make(chan struct{})	
 }
 
 //
@@ -163,33 +150,90 @@ func main() {
 	handler := c.Handler(router)
 	errs := make(chan error)
 
-
-	// start periodic timer
+	// start periodic tickers - each in a separate goroutine
+	stopRootCertsRefreshTicker := make(chan struct{})
 	go func() {
+		// start periodic ticker to pull latest root certs from EKS
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		rootCertsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Second)
+		defer rootCertsRefreshTicker.Stop()
 		for {
 			select {
-			case <- rootCertsTicker.C:	
-				// fetch root cerst from SKS and replace cached ones
-				rootCerts.FetchRootCertsFromSks()
-			case <- signingCredentialsTicker.C:	
-				// fetch current x5u and privatekey for signing. This will replace cached credentials
-				signingCredentials.FetchSigningCredentialsFromSks()
-			case <- sksSticrTicker.C:
-				sksCredentials.UpdateSksCredentials()
-				x5u.UpdateSticrHost()
-			case <- stopTicker:
-				// Stop turns off a ticker. After Stop, no more ticks will be sent.
-				// Stop does not close the channel, to prevent a read from the channel succeeding incorrectly
-				// https://golang.org/pkg/time/#Ticker.Stop
-				logInfo("Type=ntMgrTimerStop, Message=stopping all tickers and closing channel before exiting")
-				rootCertsTicker.Stop()
-				signingCredentialsTicker.Stop()
-				sksSticrTicker.Stop()
+			case <- rootCertsRefreshTicker.C:
+				// fetch root certs from EKS and replace cached ones
+				rootCerts.FetchRootCertsFromEks()
+			case <- stopRootCertsRefreshTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped root certs refresh ticker")
 				return
 			}
 		}
 	}()
-
+	stopSigningCredentialsRefreshTicker := make(chan struct{})
+	go func() {
+		// start periodic ticker to refresh  current signing credentials - x5u and privatekey
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		signingCredentialsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Second)
+		defer signingCredentialsRefreshTicker.Stop()
+		for {
+			select {
+			case <- signingCredentialsRefreshTicker.C:
+				// fetch current x5u and privatekey for signing. This will replace cached credentials
+				signingCredentials.FetchSigningCredentialsFromEks()
+			case <- stopSigningCredentialsRefreshTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped signing credentials refresh ticker")
+				return
+			}
+		}
+	}()
+	stopEksCredentialsRefreshTicker := make(chan struct{})
+	go func() {
+		// start periodic ticker to refresh server jwt to call EKS APIs
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		eksCredentialsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().EksCredentialsRefreshInterval)*time.Minute)
+		defer eksCredentialsRefreshTicker.Stop()
+		for {
+			select {
+			case <- eksCredentialsRefreshTicker.C:
+				// check for eks config changes
+				err := eksCredentials.UpdateEksCredentials()
+				if err != nil {
+					logInfo("Type=vesperRefreshEksCredentials, Message=%v", err)
+				}
+			case <- stopEksCredentialsRefreshTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped eks credentials refresh ticker")
+				return
+			}
+		}
+	}()
+	stopSticrRefreshTicker := make(chan struct{})
+	go func() {
+		// start periodic ticker to check on changes to sticr URL
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		sticrRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().SticrFileCheckInterval)*time.Minute)
+		defer sticrRefreshTicker.Stop()
+		for {
+			select {
+			case <- sticrRefreshTicker.C:
+				x5u.UpdateSticrHost()
+			case <- stopSticrRefreshTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped sticr url refresh ticker")
+				return
+			}
+		}
+	}()
+	
 	var srv http.Server
 	// Start HTTPS server only if cert and key file exist
 	if (len(strings.TrimSpace(configuration.ConfigurationInstance().SslCertFile)) > 0) && (len(strings.TrimSpace(configuration.ConfigurationInstance().SslKeyFile)) > 0) {
