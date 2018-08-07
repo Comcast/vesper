@@ -185,6 +185,48 @@ func (l *Logger) Output(calldepth int, s string) error {
 
 // Printf calls l.Output to print to the logger.
 // Arguments are handled in the manner of fmt.Printf.
+func (l *Logger) Write(s []byte) (int, error) {
+	now := time.Now() // get this early.
+	var file string
+	var line int
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.flag&(Lshortfile|Llongfile) != 0 {
+		// release lock while getting caller info - it's expensive.
+		l.mu.Unlock()
+		var ok bool
+		_, file, line, ok = runtime.Caller(2)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		l.mu.Lock()
+	}
+	l.buf = l.buf[:0]
+	l.formatHeader(&l.buf, now, file, line)
+	l.buf = append(l.buf, s...)
+	if len(s) == 0 || s[len(s)-1] != '\n' {
+		l.buf = append(l.buf, '\n')
+	}
+	// check if file is open
+	if l.out == nil {
+		err := l.open()
+		if err != nil {
+			return 0, err
+		}
+	}
+	_, err := l.out.Write(l.buf)
+	// check if file size has reached the threshold value
+	// which is either defaultMaxSize or l.maxsize
+	l.size += int64(len(l.buf))
+	if l.size >= l.maxsize {
+		l.rotate()
+	}
+	return len(l.buf), err
+}
+
+// Printf calls l.Output to print to the logger.
+// Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Printf(format string, v ...interface{}) {
 	l.Output(2, fmt.Sprintf(format, v...))
 }
