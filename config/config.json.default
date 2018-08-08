@@ -11,6 +11,7 @@
 	"signing_credentials_fetch_interval" : 60,
 	"sticr_host_file" : "",
 	"sticr_file_check_interval": 60,
+	"claims_cache_check_interval": 70,
 	"verify_root_ca" : true,
 	"validate_stale_date" : true
 }

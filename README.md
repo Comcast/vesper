@@ -39,6 +39,7 @@ The following is the template for configuration file (in JSON format) that is re
 	"eks_credentials_file_check_interval" : 60,                              <--- INTERVAL IN MINUTES FOR VESPER TO CHECK AUM URL, KEY, SECRET AND/OR EKS URL HAS CHANGED. SERVER JWT TO CALL EKS APIS IS REFRESHED AS WELL
 	"sticr_host_file" : "/usr/local/vesper/sticr.json",                      <--- FILE THAT CONTAINS STICR HOST URL + PATH
 	"sticr_file_check_interval" : 60,                                        <--- INTERVAL IN MINUTES FOR VESPER TO CHECK IF SIICR URL HAS CHANGED
+	"claims_cache_check_interval" : 70,                                      <--- INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE CACHE DATA
 	"verify_root_ca" : true or false                                         <--- (VERIFICATION ONLY) IF FALSE, VERIFICATION, ROOT CERT VALIDATION IS NOT DONE
 	"validate_stale_date" : true or false                                    <--- (VERIFICATION ONLY) IF FALSE, STALE DATE VALIDATION IS NOT DONE ON THE IAT VALUE (WHEN CURRENT TIME EXCEEEDS IAT VALUE BY MORE THAN 60 SECONDS)
 }

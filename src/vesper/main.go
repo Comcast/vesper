@@ -34,7 +34,7 @@ var (
 	regexInfo										*regexp.Regexp
 	regexAlg										*regexp.Regexp
 	regexPpt										*regexp.Regexp
-	identityCache								*cache.IdentityCache
+	claimsCache									*cache.Cache
 )
 
 // ErrorBlob -- This is a standard error object
@@ -118,8 +118,8 @@ func init() {
 		os.Exit(4)
 	}
 	
-	// instantiate map which will cache identity headers in request payload during verification
-	identityCache = cache.InitObject()
+	// instantiate cache to hold stringified claims from identity header in request payload, during verification
+	claimsCache = cache.InitObject()
 	
 	// Compile the expression once
 	regexInfo = regexp.MustCompile(`^info=<..*>$`)
@@ -229,6 +229,29 @@ func main() {
 				x5u.UpdateSticrHost()
 			case <- stopSticrRefreshTicker:
 				logInfo("Type=vesperTimerStop, Message=stopped sticr url refresh ticker")
+				return
+			}
+		}
+	}()
+	stopClaimsCacheTicker := make(chan struct{})
+	go func() {
+		t := time.Now().Unix()		// time at startup
+		// start periodic ticker to flush cache that stores JWT claims upon successful verification
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		claimsCacheTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().ClaimsCacheCheckInterval)*time.Second)
+		defer claimsCacheTicker.Stop()
+		for {
+			select {
+			case <- claimsCacheTicker.C:
+				// periodic cleanup of claims cache 
+				logInfo("Type=vesperClaimsCache, Message=clear cache for key=%v second", t)
+				claimsCache.Remove(t)
+				t += 1	// increment time by 1 second; no mutex needed here
+			case <- stopClaimsCacheTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped claims cache ticker")
 				return
 			}
 		}

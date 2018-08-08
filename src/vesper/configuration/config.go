@@ -22,6 +22,7 @@ type Configuration struct {
 	EksCredentialsRefreshInterval		int64				`json:"eks_credentials_refresh_interval"`
 	SticrHostFile										string			`json:"sticr_host_file"`
 	SticrFileCheckInterval					int64				`json:"sticr_file_check_interval"`
+	ClaimsCacheCheckInterval				int64				`json:"claims_cache_check_interval"`
 	VerifyRootCA										bool				`json:"verify_root_ca"`
 	ValidateStaleDate								bool				`json:"validate_stale_date"`
 }
@@ -44,6 +45,7 @@ func ConfigurationInstance() *Configuration {
 			EksCredentialsRefreshInterval			: 60,
 			SticrHostFile											: "",
 			SticrFileCheckInterval						: 60,
+			ClaimsCacheCheckInterval					: 70,
 			VerifyRootCA											: true,
 			ValidateStaleDate									: true,
 		}

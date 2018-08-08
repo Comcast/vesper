@@ -331,9 +331,29 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	}	
 	
 	// extract claims from JWT for validation
-	cc, err := validateClaims(response, traceID, clientIP, token[0], origTN, destTNs, iat, start.Unix())
+	orderedMap, iatInClaims, err := validateClaims(response, traceID, clientIP, token[0], origTN, destTNs, iat, start.Unix())
 	if err != nil {
 		// function writes to http.ResponseWriter directly
+		return
+	}
+	
+	// replay attack validation
+	// convert ordered map to json string and check for replay attacks
+	claimsString, err := json.Marshal(orderedMap)
+	if err != nil {
+		es := fmt.Sprintf("%v - unable to validate replay attack", err)
+		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=verifyRequest, ReasonCode=VESPER-4168, ReasonString=%v", traceID, clientIP, es)
+		response.WriteHeader(http.StatusBadRequest)
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4168", ReasonString: "unable to validate replay attack"}}
+		json.NewEncoder(response).Encode(jsonErr)
+		return
+	}
+	if ok := claimsCache.IsPresent(iatInClaims, string(claimsString)); ok {
+		es := fmt.Sprintf("possible replay attack - identity header repeated - JWT claims (%+v) is cached", string(claimsString))
+		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=verifyRequest, ReasonCode=VESPER-4169, ReasonString=%v", traceID, clientIP, es)
+		response.WriteHeader(http.StatusBadRequest)
+		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4169", ReasonString: "possible replay attack"}}
+		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
 
@@ -353,7 +373,10 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		resp["verificationResponse"].(map[string]interface{})["orig"] = r["orig"]
 		resp["verificationResponse"].(map[string]interface{})["jwt"] = make(map[string]interface{})
 		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["header"] = hh
-		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = cc
+		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = orderedMap
+		// cache claims in identity header to validate replay attacks in future
+		// note that caching happens only if verification is successful
+		claimsCache.Add(iatInClaims, string(claimsString))
 	}
 	json.NewEncoder(response).Encode(resp)
 	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in verifyRequest() : %v", traceID, time.Since(start))
@@ -472,7 +495,7 @@ func validateHeader(w http.ResponseWriter, traceID, clientIP, j string) (string,
 
 // validateClaims - validate JWT claims
 // check if expected key-values exist
-func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTNs []string, iat, t int64) (map[string]interface{}, error) {
+func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTNs []string, iat, t int64) (map[string]interface{}, int64, error) {
 	logInfo("oTN %v dTNS %+v iat %v TOKEN %v", oTN, dTNs, iat, j)
 	s := strings.Split(j, ".")
 	// s[0] is the encoded claims
@@ -482,7 +505,7 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4152", ReasonString: "unable to base64 url decode claims part of JWT "}}
 		json.NewEncoder(w).Encode(jsonErr)
-		return nil, err
+		return nil, 0, err
 	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(c, &m); err != nil {
@@ -490,7 +513,7 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4153", ReasonString: "unable to unmarshal decoded JWT claims"}}
 		json.NewEncoder(w).Encode(jsonErr)
-		return nil, err
+		return nil, 0, err
 	}
 	//origTNInClaims, iatInClaims, destTNsInClaims, err := validatePayload(w, m, traceID, clientIP)
 	orderedMap, origTNInClaims, iatInClaims, destTNsInClaims, _, errCode, err := validatePayload(m, traceID, clientIP)
@@ -499,7 +522,7 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: errCode, ReasonString: err.Error()}}
 		json.NewEncoder(w).Encode(jsonErr)
-		return nil, err
+		return nil, 0, err
 	}
 	// validate orig TN
 	if origTNInClaims != oTN {
@@ -508,7 +531,7 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4154", ReasonString: "orig TN in request payload does not match orig TN in JWT claims"}}
 		json.NewEncoder(w).Encode(jsonErr)
-		return nil, fmt.Errorf("%v", es)
+		return nil, 0, fmt.Errorf("%v", es)
 	}
 	// validate dest TNs
 	isMatch := false
@@ -533,18 +556,18 @@ func validateClaims(w http.ResponseWriter, traceID, clientIP, j, oTN string, dTN
 		w.WriteHeader(http.StatusBadRequest)
 		jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4155", ReasonString: "dest TNs in request payload does not match dest TNs in JWT claims"}}
 		json.NewEncoder(w).Encode(jsonErr)
-		return nil, fmt.Errorf("%v", es)
+		return nil, 0, fmt.Errorf("%v", es)
 	}
 	// iat in JWT validation
 	if configuration.ConfigurationInstance().ValidateStaleDate {
 		if (t > (iatInClaims + 60)) {
 			es := fmt.Sprintf("iat value (%v seconds) in JWT claims indicates stale date", iatInClaims)
-			logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=verifyRequest, ReasonCode=VESPER-4156, ReasonString=%v", traceID, clientIP, es)
+			logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=verifyRequest, ReasonCode=VESPER-4167, ReasonString=%v", traceID, clientIP, es)
 			w.WriteHeader(http.StatusBadRequest)
 			jsonErr := VResponse{VerificationResponse : ErrorBlob{ReasonCode: "VESPER-4167", ReasonString: "iat value in JWT claims indicates stale date"}}
 			json.NewEncoder(w).Encode(jsonErr)
-			return nil, fmt.Errorf("%v", es)
+			return nil, 0, fmt.Errorf("%v", es)
 		}
 	}
-	return orderedMap, nil
+	return orderedMap, iatInClaims, nil
 }
