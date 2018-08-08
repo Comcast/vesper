@@ -5,7 +5,7 @@
 This is a binary release - the application binary is available for download, as an asset.
  - copy the binary to **/usr/local/vesper**
  - create the appropriate config files in **/usr/local/vesper**
- - copy the service [file](https://github.com/iris-platform/vesper/tree/master/etc/systemd/system) to **/etc/systemd/system/**
+ - copy [this](https://github.com/iris-platform/vesper/tree/master/etc/systemd/system) file to **/etc/systemd/system/**
  - If this is a fresh install, run this command first
  ```sh
  # systemctl enable vesper.service
