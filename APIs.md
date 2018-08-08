@@ -202,7 +202,8 @@ Example
 | VESPER-4164 | other errors - certificate issuer, unauthorized root/intermediate certificate,... |
 | VESPER-4165 | public key is not a ECDSA public key |
 | VESPER-4167 | iat value indicates stale date |
-| VESPER-4168 | same origid in JWT claims; possible replay attack |
+| VESPER-4168 | unable to validate replay attack|
+| VESPER-4169 | JWT claims repeated; possible replay attack |
 
 
 ###### 401
