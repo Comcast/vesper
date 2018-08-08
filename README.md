@@ -21,6 +21,8 @@ This is a binary release - the application binary is available for download, as 
 
 ## Configuration
 
+### Main config
+
 This config file is read **ONCE** at startup only.
 
 The following is the template for configuration file (in JSON format) that is read by the application, at startup.
@@ -42,5 +44,35 @@ The following is the template for configuration file (in JSON format) that is re
 	"claims_cache_check_interval" : 70,                                      <--- INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE CACHE DATA
 	"verify_root_ca" : true or false                                         <--- (VERIFICATION ONLY) IF FALSE, VERIFICATION, ROOT CERT VALIDATION IS NOT DONE
 	"validate_stale_date" : true or false                                    <--- (VERIFICATION ONLY) IF FALSE, STALE DATE VALIDATION IS NOT DONE ON THE IAT VALUE (WHEN CURRENT TIME EXCEEEDS IAT VALUE BY MORE THAN 60 SECONDS)
+}
+```
+
+### EKS config
+
+This config file is read at startup AS WELL AS runtime.
+
+The following is the template for this configuration file (in JSON format)
+
+```sh
+{
+{
+	"aum": {
+		"url": https://<FQDN/CNAME>/v1.1/login",         <--- CNAME/FQDN FOR IRIS AUTHENTICATION SERVICE - - MUST START WITH SCHEME HTTPS://
+		"key": "",                                       <--- APP KEY FOR IRIS DOMAIN vesper.service.srv
+		"secret": ""                                     <--- APP SECRET FOR IRIS DOMAIN vesper.service.srv
+	},
+	"eks": "https://<FQDN/CNAME>"                      <--- CNAME/FQDN FOR IRIS ENCRYPTED KEYSTORE SERVICE (EKS) - MUST START WITH SCHEME HTTPS://
+}
+```
+
+### STICR config
+
+This config file is read at startup AS WELL AS runtime.
+
+The following is the template for configuration file (in JSON format)
+
+```sh
+{
+	"sticrHost": "https://<FQDN/CNAME>"                      <--- CNAME/FQDN FOR STICR - MUST START WITH SCHEME HTTPS://
 }
 ```
