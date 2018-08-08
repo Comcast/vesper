@@ -212,7 +212,7 @@ Example
 ```
 {
   "verificationResponse": {
-    "reasonCode": "VESPER-4162",
+    "reasonCode": "VESPER-4166",
     "reasonString": "error encountered in verifying signature"
   }
 }
