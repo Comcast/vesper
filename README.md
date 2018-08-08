@@ -49,7 +49,7 @@ The following is the template for configuration file (in JSON format) that is re
 
 ### EKS config
 
-This config file is read at startup AS WELL AS runtime.
+This is the **eks_credentials_file** in main config. This file is read at startup AS WELL AS runtime.
 
 The following is the template for this configuration file (in JSON format)
 
@@ -66,7 +66,7 @@ The following is the template for this configuration file (in JSON format)
 
 ### STICR config
 
-This config file is read at startup AS WELL AS runtime.
+This is the **sticr_host_file** in main config. This file is read at startup AS WELL AS runtime.
 
 The following is the template for configuration file (in JSON format)
 
