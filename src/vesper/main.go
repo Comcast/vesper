@@ -54,17 +54,17 @@ func initializeLogging() (err error) {
 
 // function to log in specific format
 func logInfo(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().Host+", Version=" + softwareVersion + ", Code=Info, "+format, args...)
+	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().LogHost+", Version=" + softwareVersion + ", Code=Info, "+format, args...)
 }
 
 // function to log errors
 func logError(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().Host+", Version=" + softwareVersion + ", Code=Error, "+format, args...)
+	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().LogHost+", Version=" + softwareVersion + ", Code=Error, "+format, args...)
 }
 
 // function to log critical errors
 func logCritical(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().Host+", Version=" + softwareVersion + ", Code=Critical, "+format, args...)
+	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().LogHost+", Version=" + softwareVersion + ", Code=Critical, "+format, args...)
 }
 
 
@@ -151,46 +151,6 @@ func main() {
 	errs := make(chan error)
 
 	// start periodic tickers - each in a separate goroutine
-	stopRootCertsRefreshTicker := make(chan struct{})
-	go func() {
-		// start periodic ticker to pull latest root certs from EKS
-		// NewTicker returns a new Ticker containing a channel that will send the time with
-		// a period specified by the duration argument. It adjusts the intervals or drops
-		// ticks to make up for slow receiver.
-		// https://golang.org/pkg/time/#NewTicker
-		rootCertsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Second)
-		defer rootCertsRefreshTicker.Stop()
-		for {
-			select {
-			case <- rootCertsRefreshTicker.C:
-				// fetch root certs from EKS and replace cached ones
-				rootCerts.FetchRootCertsFromEks()
-			case <- stopRootCertsRefreshTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped root certs refresh ticker")
-				return
-			}
-		}
-	}()
-	stopSigningCredentialsRefreshTicker := make(chan struct{})
-	go func() {
-		// start periodic ticker to refresh  current signing credentials - x5u and privatekey
-		// NewTicker returns a new Ticker containing a channel that will send the time with
-		// a period specified by the duration argument. It adjusts the intervals or drops
-		// ticks to make up for slow receiver.
-		// https://golang.org/pkg/time/#NewTicker
-		signingCredentialsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Second)
-		defer signingCredentialsRefreshTicker.Stop()
-		for {
-			select {
-			case <- signingCredentialsRefreshTicker.C:
-				// fetch current x5u and privatekey for signing. This will replace cached credentials
-				signingCredentials.FetchSigningCredentialsFromEks()
-			case <- stopSigningCredentialsRefreshTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped signing credentials refresh ticker")
-				return
-			}
-		}
-	}()
 	stopEksCredentialsRefreshTicker := make(chan struct{})
 	go func() {
 		// start periodic ticker to refresh server jwt to call EKS APIs
@@ -233,25 +193,84 @@ func main() {
 			}
 		}
 	}()
-	stopClaimsCacheTicker := make(chan struct{})
+	
+
+	stopRootCertsRefreshTicker := make(chan struct{})
 	go func() {
-		t := time.Now().Unix()		// time at startup
-		// start periodic ticker to flush cache that stores JWT claims upon successful verification
+		// start periodic ticker to pull latest root certs from EKS
 		// NewTicker returns a new Ticker containing a channel that will send the time with
 		// a period specified by the duration argument. It adjusts the intervals or drops
 		// ticks to make up for slow receiver.
 		// https://golang.org/pkg/time/#NewTicker
-		claimsCacheTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().ClaimsCacheCheckInterval)*time.Second)
-		defer claimsCacheTicker.Stop()
+		rootCertsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().RootCertsFetchInterval)*time.Second)
+		defer rootCertsRefreshTicker.Stop()
 		for {
 			select {
-			case <- claimsCacheTicker.C:
-				// periodic cleanup of claims cache 
-				logInfo("Type=vesperClaimsCache, Message=clear cache for key=%v second", t)
+			case <- rootCertsRefreshTicker.C:
+				// fetch root certs from EKS and replace cached ones
+				rootCerts.FetchRootCertsFromEks()
+			case <- stopRootCertsRefreshTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped root certs refresh ticker")
+				return
+			}
+		}
+	}()
+	stopSigningCredentialsRefreshTicker := make(chan struct{})
+	go func() {
+		// start periodic ticker to refresh  current signing credentials - x5u and privatekey
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		signingCredentialsRefreshTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().SigningCredentialsFetchInterval)*time.Second)
+		defer signingCredentialsRefreshTicker.Stop()
+		for {
+			select {
+			case <- signingCredentialsRefreshTicker.C:
+				// fetch current x5u and privatekey for signing. This will replace cached credentials
+				signingCredentials.FetchSigningCredentialsFromEks()
+			case <- stopSigningCredentialsRefreshTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped signing credentials refresh ticker")
+				return
+			}
+		}
+	}()
+	stopReplayAttackCacheValidationTicker := make(chan struct{})
+	go func() {
+		t := time.Now().Unix()		// time at startup
+		// start periodic ticker to clear stale replay attack cache
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		replayAttackCacheValidationTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().ReplayAttackCacheValidationInterval)*time.Second)
+		defer replayAttackCacheValidationTicker.Stop()
+		for {
+			select {
+			case <- replayAttackCacheValidationTicker.C:
+				// periodic cleanup of stale replay attack cache
 				claimsCache.Remove(t)
 				t += 1	// increment time by 1 second; no mutex needed here
-			case <- stopClaimsCacheTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped claims cache ticker")
+			case <- stopReplayAttackCacheValidationTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped stale replay attack cache ticker")
+				return
+			}
+		}
+	}()
+	stopPublicKeysCacheFlushTicker := make(chan struct{})
+	go func() {
+		// start periodic ticker to clear all cached public keys
+		// NewTicker returns a new Ticker containing a channel that will send the time with
+		// a period specified by the duration argument. It adjusts the intervals or drops
+		// ticks to make up for slow receiver.
+		// https://golang.org/pkg/time/#NewTicker
+		publicKeysCacheFlushTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().ReplayAttackCacheValidationInterval)*time.Second)
+		defer publicKeysCacheFlushTicker.Stop()
+		for {
+			select {
+			case <- publicKeysCacheFlushTicker.C:
+			case <- stopPublicKeysCacheFlushTicker:
+				logInfo("Type=vesperTimerStop, Message=stopped public keys cache flush ticker")
 				return
 			}
 		}
@@ -261,10 +280,14 @@ func main() {
 	// Start HTTPS server only if cert and key file exist
 	if (len(strings.TrimSpace(configuration.ConfigurationInstance().SslCertFile)) > 0) && (len(strings.TrimSpace(configuration.ConfigurationInstance().SslKeyFile)) > 0) {
 		go func() {
-			logInfo("Type=vesperHttpsServiceStart, Message=Staring HTTPS service on port 443 ...")
+			httpPort := ":443"
+			if len(strings.TrimSpace(configuration.ConfigurationInstance().HttpPort)) > 0 {
+				httpPort = ":" + configuration.ConfigurationInstance().HttpPort
+			} 
+			logInfo("Type=vesperHttpsServiceStart, Message=Staring HTTPS service on port %v ...", httpPort)
 			// Note: netstats -plnt shows a IPv6 TCP socket listening on ":443"
 			//       but no IPv4 TCP socket. This is not an issue
-			srv := &http.Server{Addr: ":443", Handler: handler}
+			srv := &http.Server{Addr: httpPort, Handler: handler}
 			if err := srv.ListenAndServeTLS(configuration.ConfigurationInstance().SslCertFile, configuration.ConfigurationInstance().SslKeyFile); err != nil {
 				logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
 				errs <- err
@@ -272,17 +295,17 @@ func main() {
 		}()
 	} else {
 		// Start HTTP server
-	 	go func() {
-			hostPort := "127.0.0.1:80"
-			if configuration.ConfigurationInstance().HttpHostPort != "" {
-				parts := strings.Split(configuration.ConfigurationInstance().HttpHostPort, ":")
-				if len(parts) != 2 {
-					logError("Type=vesperHostPortFormatError, Message=config file contains invalid host-port format (%v) - should be [host:port].... cannot start Vesper Service .... ", configuration.ConfigurationInstance().HttpHostPort)
-					os.Exit(5)
-				}				
-				hostPort = configuration.ConfigurationInstance().HttpHostPort
+		go func() {
+			httpPort := ":80"
+			if len(strings.TrimSpace(configuration.ConfigurationInstance().HttpPort)) > 0 {
+				httpPort = ":" + configuration.ConfigurationInstance().HttpPort
 			}
-			logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on port %v ...", hostPort)
+			httpHost := "127.0.0.1" 
+			if len(strings.TrimSpace(configuration.ConfigurationInstance().HttpHost)) > 0 {
+				httpHost = configuration.ConfigurationInstance().HttpHost
+			}
+			hostPort := httpHost + ":" + httpPort
+			logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on %v ...", hostPort)
 			// Start the service.
 			// Note: netstats -plnt shows a IPv6 TCP socket listening on user specified port
 			//       but no IPv4 TCP socket. This is not an issue
