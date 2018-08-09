@@ -296,9 +296,9 @@ func main() {
 	} else {
 		// Start HTTP server
 		go func() {
-			httpPort := ":80"
+			httpPort := "80"
 			if len(strings.TrimSpace(configuration.ConfigurationInstance().HttpPort)) > 0 {
-				httpPort = ":" + configuration.ConfigurationInstance().HttpPort
+				httpPort = configuration.ConfigurationInstance().HttpPort
 			}
 			httpHost := "127.0.0.1" 
 			if len(strings.TrimSpace(configuration.ConfigurationInstance().HttpHost)) > 0 {
