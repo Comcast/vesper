@@ -265,7 +265,7 @@ func main() {
 		// a period specified by the duration argument. It adjusts the intervals or drops
 		// ticks to make up for slow receiver.
 		// https://golang.org/pkg/time/#NewTicker
-		publicKeysCacheFlushTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().ReplayAttackCacheValidationInterval)*time.Second)
+		publicKeysCacheFlushTicker := time.NewTicker(time.Duration(configuration.ConfigurationInstance().PublicKeysCacheFlushInterval)*time.Second)
 		defer publicKeysCacheFlushTicker.Stop()
 		for {
 			select {
