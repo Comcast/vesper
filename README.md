@@ -38,15 +38,15 @@ The following is the template for configuration file (in JSON format) that is re
   "ssl_key_file": "",                                         <--- IF HTTPS IS SUPPORTED, THIS IS ABSOLUTE PATH + FILE NAME
   "http_host_port: "",                                        <--- (HTTP ONLY) IS APPLICABLE ONLY IF SSL CERT AND KEY FILE IS NOT AVAILABLE
   "eks_credentials_file": "/usr/local/vesper/eks.json",       <--- FILE THAT CONTAINS SKS URL + PATH AND TOKEN REQUIRED TO FETCH ROOT CERTS AS WELL AS FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING
-  "eks_credentials_file_check_interval" : 60,                 <--- INTERVAL IN MINUTES FOR VESPER TO CHECK AUM URL, KEY, SECRET AND/OR EKS URL HAS CHANGED. SERVER JWT TO CALL EKS APIS IS REFRESHED AS WELL
+  "eks_credentials_file_check_interval" : 60,                 <--- (DEFAULT IS 60 MINUTES) INTERVAL IN MINUTES FOR VESPER TO CHECK AUM URL, KEY, SECRET AND/OR EKS URL HAS CHANGED. SERVER JWT TO CALL EKS APIS IS REFRESHED AS WELL
   "sticr_host_file" : "/usr/local/vesper/sticr.json",         <--- FILE THAT CONTAINS STICR HOST URL + PATH
-  "sticr_file_check_interval" : 60,                           <--- INTERVAL IN MINUTES FOR VESPER TO CHECK IF STICR URL HAS CHANGED
-  "root_certs_fetch_interval": 60,                            <--- INTERVAL IN SECONDS FOR VESPER TO FETCH ROOT CERTS FROM SKS
-  "signing_credentials_fetch_interval": 60,                   <--- INTERVAL IN SECONDS FOR VESPER TO FETCH FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING\
-  "replay_attack_cache_validation_interval" : 70,             <--- INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE REPLAY ATTACK CACHE
-  "public_keys_cache_flush_interval" : 300,                   <--- INTERVAL IN SECONDS FOR VESPER TO FLUSH ALL CACHED PUBLIC KEYS
+  "sticr_file_check_interval" : 60,                           <--- (DEFAULT IS 60 MINUTES) INTERVAL IN MINUTES FOR VESPER TO CHECK IF STICR URL HAS CHANGED
+  "root_certs_fetch_interval": 300,                           <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FETCH ROOT CERTS FROM SKS
+  "signing_credentials_fetch_interval": 300,                  <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FETCH FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING\
+  "replay_attack_cache_validation_interval" : 70,             <--- (DEFAULT IS 70 SECONDS) INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE REPLAY ATTACK CACHE
+  "public_keys_cache_flush_interval" : 300,                   <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FLUSH ALL CACHED PUBLIC KEYS
   "verify_root_ca" : true or false,                           <--- (VERIFICATION ONLY) IF FALSE, VERIFICATION, ROOT CERT VALIDATION IS NOT DONE
-  "valid_iat_period": 60                                      <--- IN SECONDS - VESPER WILL FAIL VERIFICATION, IF IAT VALUE IN IDENTITY HEADER EXCEEDS CURRENT TIME BY THIS VALUE
+  "valid_iat_period": 60                                      <--- (DEFAULT IS 60 SECONDS) IN SECONDS - VESPER WILL FAIL VERIFICATION, IF IAT VALUE IN IDENTITY HEADER EXCEEDS CURRENT TIME BY THIS VALUE
 }
 ```
 

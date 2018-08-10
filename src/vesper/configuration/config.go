@@ -49,8 +49,8 @@ func ConfigurationInstance() *Configuration {
 			SticrHostFile													: "",
 			SticrFileCheckInterval								: 60,
 			
-			RootCertsFetchInterval								: 60,
-			SigningCredentialsFetchInterval				: 60,
+			RootCertsFetchInterval								: 300,
+			SigningCredentialsFetchInterval				: 300,
 			ReplayAttackCacheValidationInterval		: 70,
 			PublicKeysCacheFlushInterval					: 300,
 			
