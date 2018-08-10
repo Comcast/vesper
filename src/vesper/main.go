@@ -21,7 +21,8 @@ import (
 	"vesper/eks"
 	"vesper/sticr"
 	"vesper/signcredentials"
-	"vesper/cache"
+	"vesper/replayattack"
+	"vesper/publickeys"
 )
 
 var (
@@ -34,7 +35,7 @@ var (
 	regexInfo										*regexp.Regexp
 	regexAlg										*regexp.Regexp
 	regexPpt										*regexp.Regexp
-	claimsCache									*cache.Cache
+	replayAttackCache						*replayattack.Cache
 )
 
 // ErrorBlob -- This is a standard error object
@@ -119,7 +120,7 @@ func init() {
 	}
 	
 	// instantiate cache to hold stringified claims from identity header in request payload, during verification
-	claimsCache = cache.InitObject()
+	replayAttackCache = replayattack.InitObject()
 	
 	// Compile the expression once
 	regexInfo = regexp.MustCompile(`^info=<..*>$`)
@@ -249,7 +250,7 @@ func main() {
 			select {
 			case <- replayAttackCacheValidationTicker.C:
 				// periodic cleanup of stale replay attack cache
-				claimsCache.Remove(t)
+				replayAttackCache.Remove(t)
 				t += 1	// increment time by 1 second; no mutex needed here
 			case <- stopReplayAttackCacheValidationTicker:
 				logInfo("Type=vesperTimerStop, Message=stopped stale replay attack cache ticker")
@@ -269,6 +270,7 @@ func main() {
 		for {
 			select {
 			case <- publicKeysCacheFlushTicker.C:
+				publickeys.FlushCache()
 			case <- stopPublicKeysCacheFlushTicker:
 				logInfo("Type=vesperTimerStop, Message=stopped public keys cache flush ticker")
 				return

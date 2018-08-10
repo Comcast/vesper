@@ -1,9 +1,9 @@
-package cache
+package replayattack
 
 import (
 	"fmt"
 	"testing"
-	"vesper/cache"
+	"vesper/replayattack"
 )
 
 func TestAdd(t *testing.T) {

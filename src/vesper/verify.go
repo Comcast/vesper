@@ -348,7 +348,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		json.NewEncoder(response).Encode(jsonErr)
 		return
 	}
-	if ok := claimsCache.IsPresent(iatInClaims, string(claimsString)); ok {
+	if ok := replayAttackCache.IsPresent(iatInClaims, string(claimsString)); ok {
 		es := fmt.Sprintf("possible replay attack - identity header repeated - JWT claims (%+v) is cached", string(claimsString))
 		logError("Type=vesperJWTClaims, TraceID=%v, ClientIP=%v, Module=verifyRequest, ReasonCode=VESPER-4169, ReasonString=%v", traceID, clientIP, es)
 		response.WriteHeader(http.StatusBadRequest)
@@ -376,7 +376,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = orderedMap
 		// cache claims in identity header to validate replay attacks in future
 		// note that caching happens only if verification is successful
-		claimsCache.Add(iatInClaims, string(claimsString))
+		replayAttackCache.Add(iatInClaims, string(claimsString))
 	}
 	json.NewEncoder(response).Encode(resp)
 	logInfo("Type=vesperRequestResponseTime, TraceID=%v,  Message=time spent in verifyRequest() : %v", traceID, time.Since(start))

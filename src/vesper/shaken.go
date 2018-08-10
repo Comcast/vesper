@@ -15,6 +15,7 @@ import (
 	"encoding/pem"
 	"io/ioutil"
 	"net/http"
+	"vesper/publickeys"
 )
 
 // ShakenHdr - structure that holds JWT header
@@ -139,26 +140,31 @@ func createSignature(h, c, p []byte) (string, string, error)  {
 // an error message is returned
 func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 	// Get the data each time
-	resp, err := http.Get(x5u)
-	if err != nil {
-		logError("%v", err)
-		return "VESPER-4156", http.StatusBadRequest, err
+	pk := publickeys.Fetch(x5u)
+	if len(pk) == 0 {
+		resp, err := http.Get(x5u)
+		if err != nil {
+			logError("%v", err)
+			return "VESPER-4156", http.StatusBadRequest, err
+		}
+		defer resp.Body.Close()
+		// Writer the body to buffer
+		cert_buffer, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logError("%v", err)
+			return "VESPER-4157", http.StatusBadRequest, err
+		}
+		switch resp.StatusCode {
+		case 200:
+		default:
+			return "VESPER-4156", http.StatusBadRequest, fmt.Errorf("%v", string(cert_buffer))
+		}
+		pk = string(cert_buffer[:])
+		publickeys.Add(x5u, pk)
 	}
-	defer resp.Body.Close()
-	// Writer the body to buffer
-	cert_buffer, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logError("%v", err)
-		return "VESPER-4157", http.StatusBadRequest, err
-	}
-	switch resp.StatusCode {
-	case 200:
-	default:
-		return "VESPER-4156", http.StatusBadRequest, fmt.Errorf("%v", string(cert_buffer))
-	}
-	block, _ := pem.Decode(cert_buffer)
+	block, _ := pem.Decode([]byte(pk))
 	if block == nil {
-		err = fmt.Errorf("no PEM data is found")
+		err := fmt.Errorf("no PEM data is found")
 		return "VESPER-4158", http.StatusBadRequest, err
 	}
 	// parse certificate

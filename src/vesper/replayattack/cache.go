@@ -3,7 +3,7 @@
 // This data structure does hold duplicate key-value pairs
 //
 // This data structure is thread safe.
-package cache
+package replayattack
 
 import (
 	"fmt"
@@ -75,6 +75,8 @@ func (c *Cache) Clear() {
 
 // get all entries in cache
 func (c *Cache) Entries() {
+	c.RLock()
+	defer c.RUnlock()
 	for key, set := range c.cache {
 		for value := range set {
 			fmt.Printf("key: %v, Value: %v\n", key, value)
