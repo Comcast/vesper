@@ -160,6 +160,7 @@ func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 			return "VESPER-4156", http.StatusBadRequest, fmt.Errorf("%v", string(cert_buffer))
 		}
 		pk = string(cert_buffer[:])
+		// add to cache
 		publickeys.Add(x5u, pk)
 	}
 	block, _ := pem.Decode([]byte(pk))
