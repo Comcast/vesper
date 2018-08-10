@@ -43,7 +43,8 @@ The following is the template for configuration file (in JSON format) that is re
   "sticr_file_check_interval" : 60,                           <--- (DEFAULT IS 60 MINUTES) INTERVAL IN MINUTES FOR VESPER TO CHECK IF STICR URL HAS CHANGED
   "root_certs_fetch_interval": 300,                           <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FETCH ROOT CERTS FROM SKS
   "signing_credentials_fetch_interval": 300,                  <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FETCH FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING\
-  "replay_attack_cache_validation_interval" : 70,             <--- (DEFAULT IS 70 SECONDS) INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE REPLAY ATTACK CACHE
+  "replay_attack_cache_validation_interval" : 70,             <--- (DEFAULT IS 70 SECONDS) INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE REPLAY ATTACK CACHE. NOTE THAT THIS VALUE MUST BE
+                                                                   GREATER THAN VALUE SET AS "valid_iat_period"
   "public_keys_cache_flush_interval" : 300,                   <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FLUSH ALL CACHED PUBLIC KEYS
   "verify_root_ca" : true or false,                           <--- (VERIFICATION ONLY) IF FALSE, VERIFICATION, ROOT CERT VALIDATION IS NOT DONE
   "valid_iat_period": 60                                      <--- (DEFAULT IS 60 SECONDS) IN SECONDS - VESPER WILL FAIL VERIFICATION, IF IAT VALUE IN IDENTITY HEADER EXCEEDS CURRENT TIME BY THIS VALUE
