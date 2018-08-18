@@ -31,7 +31,7 @@ The following is the template for configuration file (in JSON format) that is re
 {
   "log_file" : "/var/log/vesper/vesper.log",                  <--- RECOMMENDED PATH
   "log_file_max_size" : 50000000,                             <--- IN BYTES - MAX LOG FILE SIZE BEFORE LOG ROTATION (DEFAULT: 50000000 BYTES)
-  "log_host" : "",                                            <--- HOSTNAME/IP/FQDN/CNAME TO BE ADDED TO EACH LOG LINE
+  "log_host" : "",                                            <--- HOSTNAME/IP/FQDN/CNAME WHERE VESPER IS RUNNING (WILL GET ADDED TO EACH LOG LINE FOR TRACKING PURPOSE)
   "http_host" : "",                                           <--- HOST IP TO WHICH HTTP SERVER WILL BIND TO (APPLIES ONLY IF ssl_cert_file and ssl_key_file ARE NOT SPECIFIED)
   "http_port" : "",                                           <--- HTTP PORT; IF NOT SPECIFIED DEFAULT PORT APPLIES - 443 FOR HTTPS OR 80 FOR HTTP
   "ssl_cert_file": "",                                        <--- IF HTTPS IS SUPPORTED, THIS IS ABSOLUTE PATH + FILE NAME
