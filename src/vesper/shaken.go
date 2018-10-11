@@ -58,7 +58,7 @@ func encodeWithSigner(header, claims []byte, sg signer) (string, string, error) 
 	h := base64Encode(header)
 	c := base64Encode(claims)
 	ss := fmt.Sprintf("%s.%s", h, c)
-	logInfo("%v", ss)
+	//logInfo("%v", ss)
 	sig, err := sg([]byte(ss))
 	if err != nil {
 		return "", "", err

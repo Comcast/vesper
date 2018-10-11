@@ -8,31 +8,18 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"net/http"
-	"vesper/configuration"
 	"vesper/eks"
 	"vesper/sticr"
-	"github.com/comcast/irislogger"
+	kitlog "github.com/go-kit/kit/log"
 )
 
 // globals
 var (
-	info							*irislogger.Logger
 	softwareVersion		string
 	httpClient				*http.Client
 	eksCredentials		*eks.EksCredentials
 	certRepo					*sticr.SticrHost
 )
-
-
-// function to log in specific format
-func logInfo(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05.000") + " vesper=" + configuration.ConfigurationInstance().LogHost + ", Version=" + softwareVersion + ", Code=Info, " + format, args ...)
-}
-
-// function to log in specific format
-func logError(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05.000") + " vesper=" + configuration.ConfigurationInstance().LogHost + ", Version=" + softwareVersion + ", Code=ErrorInfo, " + format, args ...)
-}
 
 // SigningCredentials - structure that holds all root certs
 type SigningCredentials struct {
@@ -44,8 +31,8 @@ type SigningCredentials struct {
 }
   
 // Initialize object
-func InitObject(i *irislogger.Logger, v string, h *http.Client, ek *eks.EksCredentials, cr *sticr.SticrHost) (*SigningCredentials, error) {
-	info = i
+func InitObject(l kitlog.Logger, v string, h *http.Client, ek *eks.EksCredentials, cr *sticr.SticrHost) (*SigningCredentials, error) {
+	glogger = l
 	softwareVersion = v
 	httpClient = h
 	eksCredentials = ek
@@ -95,7 +82,7 @@ func getSigningCredentialsFromEks() (string, string, error) {
 		return "", "", fmt.Errorf("%v - GET %v failed", err, url)
 	}
 	defer resp.Body.Close()
-	logInfo("Type=eksResponseTime, Module=getSigningCredentialsFromEks, Message=Response time : %v", time.Since(start))
+	logInfo("type", "eksResponseTime", "module", "getSigningCredentialsFromEks", "eksResponseTime", fmt.Sprintf("%v", time.Since(start)))
 	var s map[string]interface{}
 	rb, err := ioutil.ReadAll(resp.Body)
 	if err == nil {

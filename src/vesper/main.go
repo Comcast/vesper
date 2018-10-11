@@ -3,11 +3,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"context"
 	"time"
@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"github.com/httprouter"
 	"github.com/cors"
-	"github.com/comcast/irislogger"
 	"vesper/configuration"
 	"vesper/rootcerts"
 	"vesper/eks"
@@ -23,10 +22,11 @@ import (
 	"vesper/signcredentials"
 	"vesper/replayattack"
 	"vesper/publickeys"
+	kitlog "github.com/go-kit/kit/log"
 )
 
 var (
-	info												*irislogger.Logger
+	glogger											kitlog.Logger
 	rootCerts										*rootcerts.RootCerts
 	signingCredentials					*signcredentials.SigningCredentials
 	eksCredentials							*eks.EksCredentials
@@ -43,31 +43,6 @@ type ErrorBlob struct {
 	ReasonCode string `json:"reasonCode"`
 	ReasonString string `json:"reasonString"`
 }
-
-// Instantiate logging objects
-func initializeLogging() (err error) {
-	err = os.MkdirAll(filepath.Dir(configuration.ConfigurationInstance().LogFile), 0755)
-	if err == nil {
-		info = irislogger.New(configuration.ConfigurationInstance().LogFile, configuration.ConfigurationInstance().LogFileMaxSize)
-	}
-	return
-}
-
-// function to log in specific format
-func logInfo(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().LogHost+", Version=" + softwareVersion + ", Code=Info, "+format, args...)
-}
-
-// function to log errors
-func logError(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().LogHost+", Version=" + softwareVersion + ", Code=Error, "+format, args...)
-}
-
-// function to log critical errors
-func logCritical(format string, args ...interface{}) {
-	info.Printf(time.Now().Format("2006-01-02 15:04:05")+" vesper="+configuration.ConfigurationInstance().LogHost+", Version=" + softwareVersion + ", Code=Critical, "+format, args...)
-}
-
 
 // Read config file
 // Instantiate logging
@@ -94,28 +69,28 @@ func init() {
 	// initiatlize sks credentials object
 	eksCredentials, err = eks.InitObject(configuration.ConfigurationInstance().EksCredentialsFile)
 	if err != nil {
-		logCritical("Type=eksConfig, Message=%v.... cannot start Vesper Service .... ", err)
+		logCritical("type", "eksConfig", "message", fmt.Sprintf("%v.... cannot start Vesper Service .... ", err))
 		os.Exit(1)
-	}		
+	}
 
 	// initiatlize sticr object
 	x5u, err = sticr.InitObject(configuration.ConfigurationInstance().SticrHostFile)
 	if err != nil {
-		logCritical("Type=sticrConfig, Message=%v.... cannot start Vesper Service .... ", err)
+		logCritical("type", "sticrConfig", "message", fmt.Sprintf("%v.... cannot start Vesper Service .... ", err))
 		os.Exit(2)
 	}	
 	
 	// After sks credentials object is successfully initialized, initiatlize rootcerts object
-	signingCredentials, err = signcredentials.InitObject(info, softwareVersion, httpClient, eksCredentials, x5u)
+	signingCredentials, err = signcredentials.InitObject(glogger, softwareVersion, httpClient, eksCredentials, x5u)
 	if err != nil {
-		logCritical("Type=signingCredentials, Message=%v.... cannot start Vesper Service .... ", err)
+		logCritical("type", "signingCredentials", "message", fmt.Sprintf("%v.... cannot start Vesper Service .... ", err))
 		os.Exit(3)
 	}
 
 	// After sks credentials object is successfully initialized, initiatlize rootcerts object
-	rootCerts, err = rootcerts.InitObject(info, softwareVersion, httpClient, eksCredentials)
+	rootCerts, err = rootcerts.InitObject(glogger, softwareVersion, httpClient, eksCredentials)
 	if err != nil {
-		logCritical("Type=rootCerts, Message=%v.... cannot start Vesper Service .... ", err)
+		logCritical("type", "rootCerts", "message", fmt.Sprintf("%v.... cannot start Vesper Service .... ", err))
 		os.Exit(4)
 	}
 	
@@ -130,7 +105,7 @@ func init() {
 
 //
 func main() {
-	logInfo("Type=vesperStart, Message=Starting vesper .... ")
+	logInfo("type", "start", "message", "Starting vesper .... ")
 	stop := make(chan os.Signal, 1)
 	signal.Ignore(syscall.SIGPIPE)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
@@ -167,10 +142,10 @@ func main() {
 				// check for eks config changes
 				err := eksCredentials.UpdateEksCredentials()
 				if err != nil {
-					logInfo("Type=vesperRefreshEksCredentials, Message=%v", err)
+					logInfo("type", "refreshEksCredentials", "message", fmt.Sprintf("%v", err))
 				}
 			case <- stopEksCredentialsRefreshTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped eks credentials refresh ticker")
+				logInfo("type", "timerStop", "message", "stopped eks credentials refresh ticker")
 				return
 			}
 		}
@@ -189,7 +164,7 @@ func main() {
 			case <- sticrRefreshTicker.C:
 				x5u.UpdateSticrHost()
 			case <- stopSticrRefreshTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped sticr url refresh ticker")
+				logInfo("type", "timerStop", "message", "stopped sticr url refresh ticker")
 				return
 			}
 		}
@@ -211,7 +186,7 @@ func main() {
 				// fetch root certs from EKS and replace cached ones
 				rootCerts.FetchRootCertsFromEks()
 			case <- stopRootCertsRefreshTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped root certs refresh ticker")
+				logInfo("type", "timerStop", "message", "stopped root certs refresh ticker")
 				return
 			}
 		}
@@ -231,7 +206,7 @@ func main() {
 				// fetch current x5u and privatekey for signing. This will replace cached credentials
 				signingCredentials.FetchSigningCredentialsFromEks()
 			case <- stopSigningCredentialsRefreshTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped signing credentials refresh ticker")
+				logInfo("type", "timerStop", "message", "stopped signing credentials refresh ticker")
 				return
 			}
 		}
@@ -253,7 +228,7 @@ func main() {
 				replayAttackCache.Remove(t)
 				t += 1	// increment time by 1 second; no mutex needed here
 			case <- stopReplayAttackCacheValidationTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped stale replay attack cache ticker")
+				logInfo("type", "timerStop", "message", "stopped stale replay attack cache ticker")
 				return
 			}
 		}
@@ -272,7 +247,7 @@ func main() {
 			case <- publicKeysCacheFlushTicker.C:
 				publickeys.FlushCache()
 			case <- stopPublicKeysCacheFlushTicker:
-				logInfo("Type=vesperTimerStop, Message=stopped public keys cache flush ticker")
+				logInfo("type", "timerStop", "message", "stopped public keys cache flush ticker")
 				return
 			}
 		}
@@ -286,12 +261,12 @@ func main() {
 			if len(strings.TrimSpace(configuration.ConfigurationInstance().HttpPort)) > 0 {
 				httpPort = ":" + configuration.ConfigurationInstance().HttpPort
 			} 
-			logInfo("Type=vesperHttpsServiceStart, Message=Staring HTTPS service on port %v ...", httpPort)
+			logInfo("type", "httpsServiceStart", "message", fmt.Sprintf("Staring HTTPS service on port %v ...", httpPort))
 			// Note: netstats -plnt shows a IPv6 TCP socket listening on ":443"
 			//       but no IPv4 TCP socket. This is not an issue
 			srv := &http.Server{Addr: httpPort, Handler: handler}
 			if err := srv.ListenAndServeTLS(configuration.ConfigurationInstance().SslCertFile, configuration.ConfigurationInstance().SslKeyFile); err != nil {
-				logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
+				logError("type", "httpServiceFailure", "message", fmt.Sprintf("%v - could not start serving service", err))
 				errs <- err
 			}
 		}()
@@ -307,13 +282,13 @@ func main() {
 				httpHost = configuration.ConfigurationInstance().HttpHost
 			}
 			hostPort := httpHost + ":" + httpPort
-			logInfo("Type=vesperHttpServiceStart, Message=Staring HTTP service on %v ...", hostPort)
+			logInfo("type", "httpServiceStart", "message", fmt.Sprintf("starting HTTP service on %v ...", hostPort))
 			// Start the service.
 			// Note: netstats -plnt shows a IPv6 TCP socket listening on user specified port
 			//       but no IPv4 TCP socket. This is not an issue
 			srv := &http.Server{Addr: hostPort, Handler: handler}
 			if err := srv.ListenAndServe(); err != nil {
-				logError("Type=vesperHttpServiceFailure, Message=Could not start serving service due to (error: %s)", err)
+				logError("type", "httpServiceFailure", "message", fmt.Sprintf("%v - Could not start serving service", err))
 				errs <- err
 			}
 		 }()
@@ -322,20 +297,20 @@ func main() {
 	// This will run forever until channel receives error
 	select {
 	case err := <-errs:
-		logError("Type=vesperHttpServiceFailure, Message=Could not start service due to (error: %s)", err)
-		logInfo("Type=vesperShutdown, Message=Shutting down vesper .... ")
+		logError("type", "httpServiceFailure", "message", fmt.Sprintf("%v - Could not start serving service", err))
+		logInfo("type", "shutdown", "message", "shutting down vesper .... ")
 	case <-stop:
-		logInfo("Type=vesperShutdown, Message=Shutting down vesper .... ")
+		logInfo("type", "shutdown", "message", "shutting down vesper .... ")
 		// Pass a context with a timeout to tell a blocking function that it
 		// should abandon its work after the timeout elapses.
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		err := srv.Shutdown(ctx)
 		if err != nil {
-			logError("Type=vesperHttpServiceShutdownFailure, Message=Shutdown of http server error - %v", err)
-			logInfo("Type=vesperStop, Message=vesper stopped but NOT gracefully")
+			logError("type", "httpServiceShutdownFailure", "message", fmt.Sprintf("%v - http server shutdown", err))
+			logInfo("type", "stop", "message", "vesper stopped but NOT gracefully")
 		} else {
-			logInfo("Type=vesperStop, Message=vesper gracefully stopped")
+			logInfo("type", "stop", "message", "vesper gracefully stopped")
 		}
 	}
 }
