@@ -175,7 +175,7 @@ func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, http
 		"traceID", traceID,
 		"httpResponseCode", httpCode, 
 		"httpErrorResponseBody", string(jsonErr),
-		"apiProcessingTime", fmt.Sprintf("%v", time.Since(s)),
+		"apiProcessingTimeInMilliSeconds", int64(time.Since(s).Seconds()*1000),
 	)
 	lg.Log()
 	w.WriteHeader(httpCode)
