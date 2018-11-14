@@ -73,10 +73,8 @@ func encodeWithSigner(header, claims []byte, sg signer) (string, string, error) 
 func encodeEC(header, claims []byte, key *ecdsa.PrivateKey) (string, string, error) {
 	sg := func(data []byte) (sig []byte, err error) {
 		h := sha256.New()
-		r := big.NewInt(0)
-		s := big.NewInt(0)
-		h.Write([]byte(data))
-		r,s,err = ecdsa.Sign(rand.Reader, key, h.Sum(nil))
+		h.Write(data)
+		r,s,err := ecdsa.Sign(rand.Reader, key, h.Sum(nil))
 		if err == nil {
 			b := key.Curve.Params().BitSize / 8
 			if key.Curve.Params().BitSize % 8 > 0 {
@@ -110,11 +108,9 @@ func verifyWithSigner(token string, ver Verifier) error {
 func verifyEC(token string, key *ecdsa.PublicKey) error {
 	ver := func(data []byte, signature []byte) (err error) {
 		h := sha256.New()
-		r := big.NewInt(0)
-		s := big.NewInt(0)
-		h.Write([]byte(data))
-		r = new(big.Int).SetBytes(signature[:len(signature)/2])
-		s = new(big.Int).SetBytes(signature[len(signature)/2:])
+		h.Write(data)
+		r := new(big.Int).SetBytes(signature[:len(signature)/2])
+		s := new(big.Int).SetBytes(signature[len(signature)/2:])
 		if ecdsa.Verify(key, h.Sum(nil), r, s) {
 			return nil
 		}
