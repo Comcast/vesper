@@ -117,21 +117,12 @@ func verifyEC(token string, key *ecdsa.PublicKey) error {
 // createSignature is called to create a JWT using ES256 algorithm.
 // Note: The header and claims part of the created JWT is stripped out
 //			 before returning the signature only
-func createSignature(h, c, p []byte) (string, string, error)  {
-	block, _ := pem.Decode(p)
-	if block != nil {
-		// alg = ES256
-		pvtKey, err := x509.ParseECPrivateKey(block.Bytes)
-		if err == nil {
-			canonical_string, sig, err := encodeEC(h, c, pvtKey)
-			if err == nil {
-				return canonical_string, sig, nil
-			}
-			return "", "", err
-		}
-		return "", "", err
+func createSignature(h, c []byte, p *ecdsa.PrivateKey) (string, string, error)  {
+	canonical_string, sig, err := encodeEC(h, c, p)
+	if err == nil {
+		return canonical_string, sig, nil
 	}
-	return "", "", fmt.Errorf("no PEM data found")
+	return "", "", err
 }
 
 // verifySignature is called to verify the signature which was created
@@ -141,7 +132,7 @@ func createSignature(h, c, p []byte) (string, string, error)  {
 func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 	// Get the data each time
 	pk := publickeys.Fetch(x5u)
-	if len(pk) == 0 {
+	if pk == nil {
 		resp, err := http.Get(x5u)
 		if err != nil {
 			logError("%v", err)
@@ -159,55 +150,55 @@ func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 		default:
 			return "VESPER-4156", http.StatusBadRequest, fmt.Errorf("%v", string(cert_buffer))
 		}
-		pk = string(cert_buffer[:])
+		b := string(cert_buffer[:])
+		block, _ := pem.Decode([]byte(b))
+		if block == nil {
+			err := fmt.Errorf("no PEM data is found")
+			return "VESPER-4158", http.StatusBadRequest, err
+		}
+		// parse certificate
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return "VESPER-4159", http.StatusBadRequest, err
+		}
+		now := time.Now()
+		opts := x509.VerifyOptions{CurrentTime: now,}
+		if verifyCA {
+			opts = x509.VerifyOptions{CurrentTime: now, Roots: rootCerts.Root(),}
+		}
+		if _, err := cert.Verify(opts); err != nil {
+			switch err.Error() {
+			case "x509: certificate has expired or is not yet valid":
+				return "VESPER-4160", http.StatusBadRequest, err
+			case "x509: certificate signed by unknown authority" :
+				if verifyCA {
+					return "VESPER-4161", http.StatusBadRequest, err
+				}
+			case "x509: certificate is not authorized to sign other certificates":
+				if verifyCA {
+					return "VESPER-4162", http.StatusBadRequest, err
+				}
+			case "x509: issuer name does not match subject from issuing certificate":
+				if verifyCA {
+					return "VESPER-4163", http.StatusBadRequest, err
+				}
+			default:
+				if verifyCA {
+					return "VESPER-4164", http.StatusBadRequest, err
+				}
+			}
+		}
+		// ES256
+		var ok bool
+		pk, ok = cert.PublicKey.(*ecdsa.PublicKey)
+		if !ok {
+			err = fmt.Errorf("Value returned from ParsePKIXPublicKey was not an ECDSA public key")
+			return "VESPER-4165", http.StatusBadRequest, err
+		}
 		// add to cache
 		publickeys.Add(x5u, pk)
 	}
-	block, _ := pem.Decode([]byte(pk))
-	if block == nil {
-		err := fmt.Errorf("no PEM data is found")
-		return "VESPER-4158", http.StatusBadRequest, err
-	}
-	// parse certificate
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return "VESPER-4159", http.StatusBadRequest, err
-	}
-	now := time.Now()
-	opts := x509.VerifyOptions{CurrentTime: now,}
-	if verifyCA {
-		opts = x509.VerifyOptions{CurrentTime: now, Roots: rootCerts.Root(),}
-	}
-	if _, err := cert.Verify(opts); err != nil {
-		switch err.Error() {
-		case "x509: certificate has expired or is not yet valid":
-			return "VESPER-4160", http.StatusBadRequest, err
-		case "x509: certificate signed by unknown authority" :
-			if verifyCA {
-				return "VESPER-4161", http.StatusBadRequest, err
-			}
-		case "x509: certificate is not authorized to sign other certificates":
-			if verifyCA {
-				return "VESPER-4162", http.StatusBadRequest, err
-			}
-		case "x509: issuer name does not match subject from issuing certificate":
-			if verifyCA {
-				return "VESPER-4163", http.StatusBadRequest, err
-			}
-		default:
-			if verifyCA {
-				return "VESPER-4164", http.StatusBadRequest, err
-			}
-		}
-	}
-		
-	// ES256
-	ecdsa_pub, ok := cert.PublicKey.(*ecdsa.PublicKey)
-	if !ok {
-		err = fmt.Errorf("Value returned from ParsePKIXPublicKey was not an ECDSA public key")
-		return "VESPER-4165", http.StatusBadRequest, err
-	}
-	err = verifyEC(token, ecdsa_pub)
+	err := verifyEC(token, pk)
 	if err != nil {
 		return "VESPER-4166", http.StatusUnauthorized, err
 	}

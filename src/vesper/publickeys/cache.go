@@ -3,27 +3,27 @@ package publickeys
 import (
 	"fmt"
 	"sync"
+	"crypto/ecdsa"
 )
 
 var (
 	mtx = &sync.RWMutex{}
-	publicKeys = map[string]string{}
+	publicKeys = make(map[string]*ecdsa.PublicKey)
 )
 
 // returns cached public key if present
-func Fetch(x5u string) string {
+func Fetch(x5u string) *ecdsa.PublicKey {
 	// check if public key is cached
-	var pk string
 	mtx.RLock()
 	defer mtx.RUnlock()
 	if _, ok := publicKeys[x5u]; ok {
-		pk = publicKeys[x5u]
+		return publicKeys[x5u]
 	}
-	return pk
+	return nil
 }
 
 // caches public key
-func Add(x5u, pk string) {
+func Add(x5u string, pk *ecdsa.PublicKey) {
 	mtx.Lock()
 	defer mtx.Unlock()
 	publicKeys[x5u] = pk
