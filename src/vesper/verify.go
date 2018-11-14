@@ -223,7 +223,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	// first extract the JWT in identity string
 	token := strings.Split(identity, ";")
 	// validate identity field
-	if len(token) != 4 {
+	if len(token) < 2 {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
 		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4126", "Identity field does not contain all the relevant parameters in request payload", nil)
 		return
@@ -242,18 +242,6 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 		return
 	}
 	info := token[1][6:len(token[1])-1]
-	// alg
-	if !regexAlg.MatchString(token[2]) {
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4129", "Invalid alg parameter in identity field in request payload", nil)
-		return
-	}
-	// ppt
-	if !regexPpt.MatchString(token[3]) {
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4130", "Invalid ppt parameter in identity field in request payload", nil)
-		return
-	}
 	
 	// extract header from JWT for validation
 	// also get the x5u information required to verify signature
