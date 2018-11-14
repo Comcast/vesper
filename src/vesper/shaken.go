@@ -77,9 +77,20 @@ func encodeEC(header, claims []byte, key *ecdsa.PrivateKey) (string, string, err
 		s := big.NewInt(0)
 		h.Write([]byte(data))
 		r,s,err = ecdsa.Sign(rand.Reader, key, h.Sum(nil))
-		signature := r.Bytes()
- 		signature = append(signature, s.Bytes()...)
-		return signature, err
+		if err == nil {
+			b := key.Curve.Params().BitSize / 8
+			if key.Curve.Params().BitSize % 8 > 0 {
+				b += 1
+			}
+			// convert r and s into a byte array and add padded bytes to ensure big endian encoding
+			rp := make([]byte, b)
+			copy(rp[b-len(r.Bytes()):], r.Bytes())
+			sp := make([]byte, b)
+			copy(sp[b-len(s.Bytes()):], s.Bytes())
+			signature := append(rp, sp...)
+			return signature, err
+		}
+		return nil, err
 	}
 	return encodeWithSigner(header, claims, sg)
 }
