@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 	"net/http"
+	"encoding/json"
 	"strings"
 	"reflect"
 	"vesper/errorhandler"
@@ -167,19 +168,25 @@ func validatePayload(r map[string]interface{}, traceID, clientIP string) (map[st
 	return orderedMap, origTN, iat, destTNs, origID, "", nil
 }
 
-func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, httpCode int, level, traceID, eCode, eString string) {
-	jsonErr := errorhandler.JsonEncode(eCode, eString)
+func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, httpCode int, level, traceID, eCode, eString string, data interface{}) {
+	var errString string
+	w.WriteHeader(httpCode)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	} else {
+		jsonErr := errorhandler.JsonEncode(eCode, eString)
+		if len(jsonErr) > 0 {
+			w.Write(jsonErr)
+			errString = string(jsonErr)
+		}
+	}
 	lg := kitlog.With(
 		l,
 		"code", level,
 		"traceID", traceID,
 		"httpResponseCode", httpCode, 
-		"httpErrorResponseBody", string(jsonErr),
+		"httpErrorResponseBody", errString,
 		"apiProcessingTimeInMilliSeconds", int64(time.Since(s).Seconds()*1000),
 	)
 	lg.Log()
-	w.WriteHeader(httpCode)
-	if len(jsonErr) > 0 {
-		w.Write(jsonErr)
-	}
 }

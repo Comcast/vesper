@@ -45,23 +45,23 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	case err == io.EOF:
 		// empty request body
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest")
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4100", "empty request body")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4100", "empty request body", nil)
 		return
 	case err != nil :
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest")
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4102", "unable to parse request body")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4102", "unable to parse request body", nil)
 		return
 	default:
 		// err == nil
 		if !reflect.ValueOf(r["dest"]).IsValid() || !reflect.ValueOf(r["iat"]).IsValid() || !reflect.ValueOf(r["orig"]).IsValid() || !reflect.ValueOf(r["identity"]).IsValid() {
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4103", "one or more of the require fields missing in request payload")
+			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4103", "one or more of the require fields missing in request payload", nil)
 			return
 		}
 		// request payload should not contain more than the expected fields
 		if len(r) != 4 {
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4104", "request payload has more than expected fields")
+			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4104", "request payload has more than expected fields", nil)
 			return
 		}
 
@@ -71,12 +71,12 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			iat = int64(reflect.ValueOf(r["iat"]).Float())
 			if iat <= 0 {
 				lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4105", "iat value in request payload is <= 0")
+				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4105", "iat value in request payload is <= 0", nil)
 				return
 			}
 		default:
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4106", "iat field in request payload MUST be a number")
+			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4106", "iat field in request payload MUST be a number", nil)
 			return
 		}
 
@@ -86,12 +86,12 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			identity = reflect.ValueOf(r["identity"]).String()
 			if len(strings.TrimSpace(identity)) == 0 {
 				lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4107", "identity field in request payload is an empty string")
+				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4107", "identity field in request payload is an empty string", nil)
 				return
 			}
 		default:
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4108", "identity field in request payload MUST be a string")
+			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4108", "identity field in request payload MUST be a string", nil)
 			return
 		}
 
@@ -102,17 +102,17 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			switch {
 			case len(origKeys) == 0 :
 				lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4109", "orig in request payload is an empty object")
+				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4109", "orig in request payload is an empty object", nil)
 				return
 			case len(origKeys) > 1 :
 				lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4110", "orig in request payload should contain only one field")
+				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4110", "orig in request payload should contain only one field", nil)
 				return
 			default:
 				// field should be "tn" only
 				if origKeys[0].String() != "tn" {
 					lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4111", "orig in request payload does not contain field \"tn\"")
+					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4111", "orig in request payload does not contain field \"tn\"", nil)
 					return
 				}
 				// must be an array
@@ -122,25 +122,25 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					ot := reflect.ValueOf(r["orig"].(map[string]interface{})["tn"])
 					if ot.Len() == 0 {
 						lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-						serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4112", "orig tn in request payload is an empty array")
+						serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4112", "orig tn in request payload is an empty array", nil)
 						return
 					}
 					// contains empty string
 					if ot.Len() != 1 {
 						lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-						serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4113", "orig tn array contains more than one element in request payload")
+						serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4113", "orig tn array contains more than one element in request payload", nil)
 						return
 					}
 					for i := 0; i < ot.Len(); i++ {
 						tn := ot.Index(i).Elem()
 						if tn.Kind() != reflect.String {
 							lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-							serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4114", "orig tn in request payload is not a string")
+							serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4114", "orig tn in request payload is not a string", nil)
 							return
 						} else {
 							if len(strings.TrimSpace(tn.String())) == 0 {
 								lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-								serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4115", "orig tn in request payload is an empty string")
+								serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4115", "orig tn in request payload is an empty string", nil)
 								return
 							}
 							// append
@@ -149,13 +149,13 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					}
 				default:
 					lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4116", "orig tn in request payload is not an array")
+					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4116", "orig tn in request payload is not an array", nil)
 					return
 				}
 			}
 		default:
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4117", "orig field in request payload MUST be a JSON object")
+			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4117", "orig field in request payload MUST be a JSON object", nil)
 			return
 		}
 
@@ -166,17 +166,17 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 			switch {
 			case len(destKeys) == 0 :
 				lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4118", "dest in request payload is an empty object")
+				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4118", "dest in request payload is an empty object", nil)
 				return
 			case len(destKeys) > 1 :
 				lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4119", "dest in request payload should contain only one field")
+				serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4119", "dest in request payload should contain only one field", nil)
 				return
 			default:
 				// field should be "tn" only
 				if destKeys[0].String() != "tn" {
 					lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4120", "dest in request payload does not contain field \"tn\"")
+					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4120", "dest in request payload does not contain field \"tn\"", nil)
 					return
 				}
 				// validate "tn" value is of type string and is not an empty string
@@ -186,7 +186,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					dt := reflect.ValueOf(r["dest"].(map[string]interface{})["tn"])
 					if dt.Len() == 0 {
 						lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-						serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4121", "dest tn in request payload is an empty array")
+						serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4121", "dest tn in request payload is an empty array", nil)
 						return
 					}
 					// contains empty string
@@ -194,12 +194,12 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 						tn := dt.Index(i).Elem()
 						if tn.Kind() != reflect.String {
 							lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-							serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4122", "one or more dest tns in request payload is not a string")
+							serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4122", "one or more dest tns in request payload is not a string", nil)
 							return
 						} else {
 							if len(strings.TrimSpace(tn.String())) == 0 {
 								lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-								serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4123", "one or more dest tns in request payload is an empty string")
+								serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4123", "one or more dest tns in request payload is an empty string", nil)
 								return
 							}
 							// append
@@ -208,50 +208,50 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 					}
 				default:
 					lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4124", "dest tn in request payload is not an array")
+					serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4124", "dest tn in request payload is not an array", nil)
 					return
 				}
 			}
 		default:
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4125", "dest field in request payload MUST be a JSON object")
+			serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4125", "dest field in request payload MUST be a JSON object", nil)
 			return
 		}
 	}
-	logInfo("Type=vesperverifyRequest, TraceID=%v, Module=verifyRequest, Message=%+v", traceID, r)
+	logInfo("type", "verifyRequest", "traceID", traceID, "module", "verifyRequest", "requestPayload", r)
 
 	// first extract the JWT in identity string
 	token := strings.Split(identity, ";")
 	// validate identity field
 	if len(token) != 4 {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4126", "Identity field does not contain all the relevant parameters in request payload")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4126", "Identity field does not contain all the relevant parameters in request payload", nil)
 		return
 	}
 	// JWT
 	jwt := strings.Split(token[0], ".")
 	if len(jwt) != 3 {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4127", "Invalid JWT format in identity field in request payload")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4127", "Invalid JWT format in identity field in request payload", nil)
 		return
 	}
 	// Info parameter
 	if !regexInfo.MatchString(token[1]) {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4128", "Invalid info parameter in identity field in request payload")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4128", "Invalid info parameter in identity field in request payload", nil)
 		return
 	}
 	info := token[1][6:len(token[1])-1]
 	// alg
 	if !regexAlg.MatchString(token[2]) {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4129", "Invalid alg parameter in identity field in request payload")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4129", "Invalid alg parameter in identity field in request payload", nil)
 		return
 	}
 	// ppt
 	if !regexPpt.MatchString(token[3]) {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4130", "Invalid ppt parameter in identity field in request payload")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4130", "Invalid ppt parameter in identity field in request payload", nil)
 		return
 	}
 	
@@ -265,7 +265,7 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	// compare x5u and info
 	if x5u != info {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4131", "x5u value in JWT header does not match info parameter in identity field in request payload")
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4131", "x5u value in JWT header does not match info parameter in identity field in request payload", nil)
 		return
 	}	
 	
@@ -281,37 +281,37 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	claimsString, err := json.Marshal(orderedMap)
 	if err != nil {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4168", fmt.Sprintf("%v - unable to validate replay attack", err))
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4168", fmt.Sprintf("%v - unable to validate replay attack", err), nil)
 		return
 	}
 	if ok := replayAttackCache.IsPresent(iatInClaims, string(claimsString)); ok {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "verifyRequest", "requestPayload", r)
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4169", fmt.Sprintf("possible replay attack - identity header repeated - JWT claims (%+v) is cached", string(claimsString)))
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4169", fmt.Sprintf("possible replay attack - identity header repeated - JWT claims (%+v) is cached", string(claimsString)), nil)
 		return
 	}
 
 	resp := make(map[string]interface{})
 	resp["verificationResponse"] = make(map[string]interface{})
-	lg := kitlog.With(glogger, "type", "requestResponseTime", "module", "verifyRequest")
 	// verify signature
 	code, errCode, err := verifySignature(x5u, token[0], configuration.ConfigurationInstance().VerifyRootCA)
 	if err != nil {
-		serveHttpResponse(start, response, lg, errCode, "error", traceID, code, fmt.Sprintf("%v - error in verifying signature", err))
+		lg := kitlog.With(glogger, "type", "requestResponseTime", "module", "verifyRequest", "message", fmt.Sprintf("%v - error in verifying signature", err), "resp", resp)
 		resp["verificationResponse"].(map[string]interface{})["reasonCode"] = code
 		resp["verificationResponse"].(map[string]interface{})["reasonString"] = err.Error()
-	} else {
-		serveHttpResponse(start, response, lg, http.StatusOK, "info", traceID, "", "")
-		resp["verificationResponse"].(map[string]interface{})["dest"] = r["dest"]
-		resp["verificationResponse"].(map[string]interface{})["iat"] = r["iat"]
-		resp["verificationResponse"].(map[string]interface{})["orig"] = r["orig"]
-		resp["verificationResponse"].(map[string]interface{})["jwt"] = make(map[string]interface{})
-		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["header"] = hh
-		resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = orderedMap
-		// cache claims in identity header to validate replay attacks in future
-		// note that caching happens only if verification is successful
-		replayAttackCache.Add(iatInClaims, string(claimsString))
+		serveHttpResponse(start, response, lg, errCode, "error", traceID, "", "", resp)
+		return
 	}
-	json.NewEncoder(response).Encode(resp)
+	lg := kitlog.With(glogger, "type", "requestResponseTime", "module", "verifyRequest")
+	resp["verificationResponse"].(map[string]interface{})["dest"] = r["dest"]
+	resp["verificationResponse"].(map[string]interface{})["iat"] = r["iat"]
+	resp["verificationResponse"].(map[string]interface{})["orig"] = r["orig"]
+	resp["verificationResponse"].(map[string]interface{})["jwt"] = make(map[string]interface{})
+	resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["header"] = hh
+	resp["verificationResponse"].(map[string]interface{})["jwt"].(map[string]interface{})["claims"] = orderedMap
+	// cache claims in identity header to validate replay attacks in future
+	// note that caching happens only if verification is successful
+	replayAttackCache.Add(iatInClaims, string(claimsString))
+	serveHttpResponse(start, response, lg, http.StatusOK, "info", traceID, "", "", resp)
 }
 
 // validateHeader - validate JWT header
@@ -323,25 +323,25 @@ func validateHeader(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 	h, err := base64Decode(s[0])
 	if err != nil {
 		lg := kitlog.With(glogger, "type", "jwtHeader", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4150", fmt.Sprintf("%v - unable to base64 url decode header part of JWT", err))
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4150", fmt.Sprintf("%v - unable to base64 url decode header part of JWT", err), nil)
 		return "", nil, err
 	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(h, &m); err != nil {
 		lg := kitlog.With(glogger, "type", "jwtHeader", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4151", fmt.Sprintf("%v - unable to unmarshal decoded header to map[string]interface{}", err))
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4151", fmt.Sprintf("%v - unable to unmarshal decoded header to map[string]interface{}", err), nil)
 		return "", nil, err
 	}
 	if len(m) != 4 {
 		// not the expected number of fields in header
 		lg := kitlog.With(glogger, "type", "jwtHeader", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4132", "decoded header does not have the expected number of fields (4)")
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4132", "decoded header does not have the expected number of fields (4)", nil)
 		return "", nil, fmt.Errorf("decoded header does not have the expected number of fields (4)")
 	}
 	// err == nil
 	if !reflect.ValueOf(m["alg"]).IsValid() || !reflect.ValueOf(m["ppt"]).IsValid() || !reflect.ValueOf(m["typ"]).IsValid() || !reflect.ValueOf(m["x5u"]).IsValid() {
 		lg := kitlog.With(glogger, "type", "jwtHeader", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4133", "one or more of the required fields missing in JWT header")
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4133", "one or more of the required fields missing in JWT header", nil)
 		return "", nil, fmt.Errorf("one or more of the required fields missing in JWT header")
 	}
 
@@ -351,12 +351,12 @@ func validateHeader(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 		alg := reflect.ValueOf(m["alg"]).String()
 		if alg != "ES256" {
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-			serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4134", "alg field value in JWT header is not \"ES256\"")
+			serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4134", "alg field value in JWT header is not \"ES256\"", nil)
 			return "", nil, fmt.Errorf("alg field value in JWT header is not \"ES256\"")
 		}
 	default:
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4135", "alg field in JWT header is not a string")
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4135", "alg field in JWT header is not a string", nil)
 		return "", nil, fmt.Errorf("alg field value in JWT header is not a string")
 	}
 
@@ -366,12 +366,12 @@ func validateHeader(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 		ppt := reflect.ValueOf(m["ppt"]).String()
 		if ppt != "shaken" {
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-			serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4136", "ppt field value in JWT header is not \"shaken\"")
+			serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4136", "ppt field value in JWT header is not \"shaken\"", nil)
 			return "", nil, fmt.Errorf("ppt field value in JWT header is not \"shaken\"")
 		}
 	default:
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4137", "ppt field value in JWT header is not a string")
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4137", "ppt field value in JWT header is not a string", nil)
 		return "", nil, fmt.Errorf("ppt field value in JWT header is not a string")
 	}
 
@@ -381,12 +381,12 @@ func validateHeader(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 		typ := reflect.ValueOf(m["typ"]).String()
 		if typ != "passport" {
 			lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-			serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4138", "typ field value in JWT header is not \"passport\"")
+			serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4138", "typ field value in JWT header is not \"passport\"", nil)
 			return "", nil, fmt.Errorf("typ field value in JWT header is not \"passport\"")
 		}
 	default:
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4139", "typ field value in JWT header is not a string")
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4139", "typ field value in JWT header is not a string", nil)
 		return "", nil, fmt.Errorf("typ field value in JWT header is not a string")
 	}
 
@@ -396,7 +396,7 @@ func validateHeader(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 		x5u = reflect.ValueOf(m["x5u"]).String()
 	default:
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateHeader")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4140", "x5u field value in JWT header is not a string")
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4140", "x5u field value in JWT header is not a string", nil)
 		return "", nil, fmt.Errorf("x5u field value in JWT header is not a string")
 	}
 
@@ -406,33 +406,32 @@ func validateHeader(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 // validateClaims - validate JWT claims
 // check if expected key-values exist
 func validateClaims(start time.Time, w http.ResponseWriter, traceID, clientIP, j, oTN string, dTNs []string, iat, t int64) (map[string]interface{}, int64, error) {
-	logInfo("oTN %v dTNS %+v iat %v TOKEN %v", oTN, dTNs, iat, j)
 	s := strings.Split(j, ".")
 	// s[0] is the encoded claims
 	c, err := base64Decode(s[1])
 	if err != nil {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateClaims")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4152", fmt.Sprintf("%v - unable to base64 url decode claims part of JWT", err))
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4152", fmt.Sprintf("%v - unable to base64 url decode claims part of JWT", err), nil)
 		return nil, 0, err
 	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(c, &m); err != nil {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateClaims")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4153", fmt.Sprintf("%v - unable to unmarshal decoded claims to map[string]interface{}", err))
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4153", fmt.Sprintf("%v - unable to unmarshal decoded claims to map[string]interface{}", err), nil)
 		return nil, 0, err
 	}
 	//origTNInClaims, iatInClaims, destTNsInClaims, err := validatePayload(w, m, traceID, clientIP)
 	orderedMap, origTNInClaims, iatInClaims, destTNsInClaims, _, errCode, err := validatePayload(m, traceID, clientIP)
 	if err != nil {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateClaims")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, errCode, err.Error())
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, errCode, err.Error(), nil)
 		return nil, 0, err
 	}
 	// validate orig TN
 	if origTNInClaims != oTN {
 		es := fmt.Sprintf("orig TN %v in request payload does not match orig TN in JWT claims (%+v)", oTN, m)
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateClaims")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4154", es)
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4154", es, nil)
 		return nil, 0, fmt.Errorf("%v", es)
 	}
 	// validate dest TNs
@@ -455,14 +454,14 @@ func validateClaims(start time.Time, w http.ResponseWriter, traceID, clientIP, j
 	if !isMatch {
 		es := fmt.Sprintf("dest TNs %+v in request payload does not match dest TNs in JWT claims (%+v)", dTNs, m)
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateClaims")
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4155", es)
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4155", es, nil)
 		return nil, 0, fmt.Errorf("%v", es)
 	}
 	// iat in JWT validation
 	if (t > (iatInClaims + configuration.ConfigurationInstance().ValidIatPeriod)) {
 		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "validateClaims")
 		es := fmt.Sprintf("iat value (%v seconds) in JWT claims indicates stale date", iatInClaims)
-		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4167", es)
+		serveHttpResponse(start, w, lg, http.StatusBadRequest, "error", traceID, "VESPER-4167", es, nil)
 		return nil, 0, fmt.Errorf("%v", es)
 	}
 	return orderedMap, iatInClaims, nil
