@@ -10,6 +10,7 @@ import (
 	"strings"
 	"reflect"
 	"vesper/errorhandler"
+	"vesper/stats"
 	kitlog "github.com/go-kit/kit/log"
 )
 
@@ -180,13 +181,15 @@ func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, http
 			errString = string(jsonErr)
 		}
 	}
+	t := int64(time.Since(s).Seconds()*1000)
+	stats.UpdateApiProcessingTime(t)
 	lg := kitlog.With(
 		l,
 		"code", level,
 		"traceID", traceID,
 		"httpResponseCode", httpCode, 
 		"httpErrorResponseBody", errString,
-		"apiProcessingTimeInMilliSeconds", int64(time.Since(s).Seconds()*1000),
+		"apiProcessingTimeInMilliSeconds", t,
 	)
 	lg.Log()
 }

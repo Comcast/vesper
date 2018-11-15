@@ -13,6 +13,7 @@ import (
 	"github.com/httprouter"
 	"github.com/satori/go.uuid"
 	"vesper/configuration"
+	"vesper/stats"
 	kitlog "github.com/go-kit/kit/log"
 )
 
@@ -26,13 +27,13 @@ func verifyRequest(response http.ResponseWriter, request *http.Request, _ httpro
 	start := time.Now()
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Content-Type", "application/json")
-	clientIP := request.RemoteAddr
+	clientIP := getClientIP(request)
 	traceID := request.Header.Get("Trace-Id")
 	if traceID == "" {
 		traceID = "VESPER-" + uuid.NewV1().String()
 	}
 	response.Header().Set("Trace-Id", traceID)
-
+	stats.IncrVerificationRequestCount()
 	var iat int64
 	var origTN string
 	var destTNs []string

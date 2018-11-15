@@ -112,8 +112,10 @@ func main() {
 
 	router := httprouter.New()
 	router.GET("/v1/version", version)
+	router.GET("/stir/v1/stats", getStats)
 	router.POST("/stir/v1/signing", signRequest)
 	router.POST("/stir/v1/verification", verifyRequest)
+	router.POST("/stir/v1/resetstats", resetStats)
 
 	// Start the service.
 	// Note: netstats -plnt shows a IPv6 TCP socket listening on localhost:9000
