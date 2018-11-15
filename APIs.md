@@ -232,7 +232,6 @@ Example
 ###### 200 OK
 
 Example
-
 ```
 {  
    "avgApiProcessingTime":15,
@@ -244,7 +243,8 @@ Example
    "processingTime (more than 150ms)":0.007228523754736188,
    "signingRequests":83005,
    "verificationRequests":83004
-}```
+}
+```
 
 
 ### POST /stir/v1/resetstats
