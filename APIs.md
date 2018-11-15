@@ -221,3 +221,38 @@ Example
 | reasonCode | reasonString |
 | ----- | ----- |
 | VESPER-4166 | error encountered in verifying signature|
+
+
+### POST /stir/v1/stats
+
+#### HTTP Response
+
+##### Success
+
+###### 200 OK
+
+Example
+
+```
+{  
+   "avgApiProcessingTime":15,
+   "maxApiProcessingTime":202,
+   "minApiProcessingTime":4,
+   "processingTime (0 - 50ms)":99.91446246890229,
+   "processingTime (101 - 150ms)":0.07589949942472998,
+   "processingTime (51 - 100ms)":0.07589949942472998,
+   "processingTime (more than 150ms)":0.007228523754736188,
+   "signingRequests":83005,
+   "verificationRequests":83004
+}```
+
+
+### POST /stir/v1/resetstats
+
+#### HTTP Response
+
+##### Success
+
+###### 200 OK
+
+All stats reset
