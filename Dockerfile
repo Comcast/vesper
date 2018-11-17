@@ -22,6 +22,6 @@ RUN chmod 700 /root/.ssh/id_rsa && echo "Host github.com\n\tStrictHostKeyCheckin
 # Install vesper
 WORKDIR /usr/local
 #RUN git clone git@github.com:iris-platform/vesper.git
-RUN git clone -b v2.5 git@github.com:iris-platform/vesper.git
+RUN git clone -b v2.6 git@github.com:iris-platform/vesper.git
 RUN rm -rf /usr/local/vesper/.git
 RUN go install vesper

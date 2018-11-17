@@ -8,7 +8,7 @@ import (
 	"github.com/httprouter"
 )
 
-const softwareVersion = `2.5`
+const softwareVersion = `2.6`
 
 // VersionQueryResponse -- struct that holds software version
 type VersionQueryResponse struct {
