@@ -1,6 +1,6 @@
 services:
   # The image name is in the [NAME:TAG] format. This should match what was used to build the Dockerfile
-  image: vesper:2.6
+  image: vesper:2.7
   # DO NOT tamper with this command
   command: /usr/local/vesper/bin/vesper /usr/local/vesper/config/config.json
   volumes:

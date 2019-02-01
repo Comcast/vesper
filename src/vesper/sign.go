@@ -38,20 +38,20 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	switch {
 	case err == io.EOF:
 		// empty request body
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest")
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4001", "empty request body", nil)
+		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest", "error", err)
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "signingResponse", "VESPER-4001", nil)
 		return
 	case err != nil :
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest")
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "VESPER-4002", "unable to parse request body", nil)
+		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest", "error", err)
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "signingResponse", "VESPER-4002", nil)
 		return
 	default:
 		// err == nil. continue
 	}
 	orderedMap, _, _, _, _, errCode, err := validatePayload(r, traceID, clientIP)
 	if err != nil {
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest")
-		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, errCode, err.Error(), nil)
+		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest", "error", err)
+		serveHttpResponse(start, response, lg, http.StatusBadRequest, "error", traceID, "signingResponse", errCode, nil)
 		return
 	}
 	logInfo("type", "signRequest", "traceID", traceID, "clientIP", clientIP, "module", "signRequest", "requestPayload", r)
@@ -60,20 +60,20 @@ func signRequest(response http.ResponseWriter, request *http.Request, _ httprout
 	hdr := ShakenHdr{	Alg: "ES256", Ppt: "shaken", Typ: "passport", X5u: x}
 	hdrBytes, err := json.Marshal(hdr)
 	if err != nil {
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest")
-		serveHttpResponse(start, response, lg, http.StatusInternalServerError, "error", traceID, "VESPER-5050", fmt.Sprintf("%v - error in converting header to byte array", err), nil)
+		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest", "error", fmt.Sprintf("%v - error in converting header to byte array", err))
+		serveHttpResponse(start, response, lg, http.StatusInternalServerError, "error", traceID, "signingResponse", "VESPER-5050", nil)
 		return
 	}
 	claimsBytes, _ := json.Marshal(orderedMap)
 	if err != nil {
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest")
-		serveHttpResponse(start, response, lg, http.StatusInternalServerError, "error", traceID, "VESPER-5051", fmt.Sprintf("%v - error in converting claims to byte array", err), nil)
+		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest", "error", fmt.Sprintf("%v - error in converting claims to byte array", err))
+		serveHttpResponse(start, response, lg, http.StatusInternalServerError, "error", traceID, "signingResponse", "VESPER-5051", nil)
 		return
 	}
 	canonicalString, sig, err := createSignature(hdrBytes, claimsBytes, p)
 	if err != nil {
-		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest")
-		serveHttpResponse(start, response, lg, http.StatusInternalServerError, "error", traceID, "VESPER-5052", fmt.Sprintf("%v - error in signing request for request payload", err), nil)
+		lg := kitlog.With(glogger, "type", "requestPayload", "clientIP", clientIP, "module", "signRequest", "error", fmt.Sprintf("%v - error in signing request for request payload", err))
+		serveHttpResponse(start, response, lg, http.StatusInternalServerError, "error", traceID, "signingResponse", "VESPER-5052", nil)
 		return
 	}
 	resp := make(map[string]interface{})

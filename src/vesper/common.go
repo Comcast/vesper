@@ -169,16 +169,17 @@ func validatePayload(r map[string]interface{}, traceID, clientIP string) (map[st
 	return orderedMap, origTN, iat, destTNs, origID, "", nil
 }
 
-func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, httpCode int, level, traceID, eCode, eString string, data interface{}) {
-	var errString string
+func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, httpCode int, level, traceID, action, eCode string, data interface{}) {
+	resp := make(map[string]interface{})
 	w.WriteHeader(httpCode)
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
 	} else {
-		jsonErr := errorhandler.JsonEncode(eCode, eString)
-		if len(jsonErr) > 0 {
-			w.Write(jsonErr)
-			errString = string(jsonErr)
+		if len(action) > 0 && len(eCode) > 0 {
+			resp[action] = make(map[string]interface{})
+			resp[action].(map[string]interface{})["reasonCode"] = eCode
+			resp[action].(map[string]interface{})["reasonString"] = errorhandler.ReasonString[eCode]
+			json.NewEncoder(w).Encode(resp)
 		}
 	}
 	t := int64(time.Since(s).Seconds()*1000)
@@ -188,7 +189,7 @@ func serveHttpResponse(s time.Time, w http.ResponseWriter, l kitlog.Logger, http
 		"code", level,
 		"traceID", traceID,
 		"httpResponseCode", httpCode, 
-		"httpErrorResponseBody", errString,
+		"httpErrorResponseBody", resp,
 		"apiProcessingTimeInMilliSeconds", t,
 	)
 	lg.Log()
