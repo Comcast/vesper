@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"	
 	"runtime"
 	"sync"
 	"time"
@@ -37,6 +39,8 @@ const (
 	defaultMaxSize = 50 * 1024 *1024	// Default file size before rotating log
 )
 
+var ll *Logger
+
 // A Logger represents an active logging object that generates lines of
 // output to an io.Writer. Each logging operation makes a single call to
 // the Writer's Write method. A Logger can be used simultaneously from
@@ -61,7 +65,18 @@ func New(filename string, maxsize int64) *Logger {
 	if maxsize == 0 {
 		maxsize = defaultMaxSize
 	}
-	return &Logger{filename: filename, maxsize: maxsize}
+	ll = &Logger{filename: filename, maxsize: maxsize}
+	rotate := make(chan os.Signal, 1)
+	signal.Notify(rotate, syscall.SIGUSR1)
+	go func() {
+		for {
+			select {
+			case <-rotate:
+				ll.rotate()
+			}
+		}
+	}()
+	return ll
 }
 
 // SetOutput sets the output destination for the logger.
