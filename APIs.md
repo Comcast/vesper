@@ -28,8 +28,8 @@ Example
 ```
 {
   "signingResponse": {
-    "reasonCode": "VESPER-0002",
-    "reasonString": "Unable to parse request body"
+    "code": "VESPER-0002",
+    "message": "Unable to parse request body"
   }
 }
 ```
@@ -68,8 +68,8 @@ Example
 ```
 {
   "signingResponse": {
-    "reasonCode": "VESPER-0152",
-    "reasonString": "error in signing request"
+    "code": "VESPER-0152",
+    "message": "error in signing request"
   }
 }
 ```
@@ -137,8 +137,8 @@ Example
 ```
 {
   "verificationResponse": {
-    "reasonCode": "VESPER-4100",
-    "reasonString": "Unable to parse request body"
+    "code": "VESPER-4100",
+    "message": "Unable to parse request body"
   }
 }
 ```
@@ -212,8 +212,8 @@ Example
 ```
 {
   "verificationResponse": {
-    "reasonCode": "VESPER-4166",
-    "reasonString": "error encountered in verifying signature"
+    "code": "VESPER-4166",
+    "message": "error encountered in verifying signature"
   }
 }
 ```
