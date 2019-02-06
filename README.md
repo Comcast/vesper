@@ -1,201 +1,80 @@
 # vesper
-SHAKEN based signing and validation server
 
-## APIs
+## Installation
 
-### POST /stir/v1/signing
+This is a binary release - the application binary is available for download, as an asset.
+ - copy the binary to **/usr/local/vesper**
+ - create the appropriate config files in **/usr/local/vesper**
+ - copy [this](https://github.com/iris-platform/vesper/tree/master/etc/systemd/system) file to **/etc/systemd/system/**
+ - If this is a fresh install, run this command first
+ ```sh
+ # systemctl enable vesper.service
+ ```
+ - To start service
+ ```sh
+ # systemctl start vesper.service
+ ```
+ - To stop service
+ ```sh
+ # systemctl stop vesper.service
+ ```
 
-#### HTTP Response
+## Configuration
 
-##### Success	
+### Main config
 
-###### 200 OK
+This config file is read **ONCE** at startup only.
 
-Example
-```
+The following is the template for configuration file (in JSON format) that is read by the application, at startup.
+
+```sh
 {
-  "signingResponse": {
-    "identity": "eyJhbGciOiJFUzI1NiIsInR5cCI6InBhc3Nwb3J0IiwicHB0Ijoic2hha2VuIiwieDV1IjoiaHR0cHM6Ly9jZXJ0LWF1dGgucG9jLnN5cy5jb21jYXN0Lm5ldC9leGFtcGxlLmNlciJ9.eyJhdHRlc3QiOiJBIiwiZGVzdCI6eyJ0biI6WyJmZHN2Z2FzIl19LCJpYXQiOjMyMzEyMzQxLCJvcmlnIjp7InRuIjoiZHdkdyJ9LCJvcmlnaWQiOiJkc2RzZCJ9.xhVsurlxeS8cidMQxnQKb9ZLLQwgzYjMhZ_crGXpT115RrcYYRpCT1qU421ttHSAlwX_LsR8HXf_F6WSyBpuJw;info=<https://cert-auth.poc.sys.comcast.net/example.cer>;alg=ES256"
-  }
+  "log_file" : "/var/log/vesper/vesper.log",                  <--- RECOMMENDED PATH
+  "log_file_max_size" : 50000000,                             <--- IN BYTES - MAX LOG FILE SIZE BEFORE LOG ROTATION (DEFAULT: 50000000 BYTES)
+  "log_host" : "",                                            <--- HOSTNAME/IP/FQDN/CNAME WHERE VESPER IS RUNNING (WILL GET ADDED TO EACH LOG LINE FOR TRACKING PURPOSE)
+  "http_host" : "",                                           <--- HOST IP TO WHICH HTTP SERVER WILL BIND TO (APPLIES ONLY IF ssl_cert_file and ssl_key_file ARE NOT SPECIFIED)
+  "http_port" : "",                                           <--- HTTP PORT; IF NOT SPECIFIED DEFAULT PORT APPLIES - 443 FOR HTTPS OR 80 FOR HTTP
+  "ssl_cert_file": "",                                        <--- IF HTTPS IS SUPPORTED, THIS IS ABSOLUTE PATH + FILE NAME
+  "ssl_key_file": "",                                         <--- IF HTTPS IS SUPPORTED, THIS IS ABSOLUTE PATH + FILE NAME
+  "http_host_port: "",                                        <--- (HTTP ONLY) IS APPLICABLE ONLY IF SSL CERT AND KEY FILE IS NOT AVAILABLE
+  "eks_credentials_file": "/usr/local/vesper/eks.json",       <--- FILE THAT CONTAINS SKS URL + PATH AND TOKEN REQUIRED TO FETCH ROOT CERTS AS WELL AS FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING
+  "eks_credentials_file_check_interval" : 60,                 <--- (DEFAULT IS 60 MINUTES) INTERVAL IN MINUTES FOR VESPER TO CHECK AUM URL, KEY, SECRET AND/OR EKS URL HAS CHANGED. SERVER JWT TO CALL EKS APIS IS REFRESHED AS WELL
+  "sticr_host_file" : "/usr/local/vesper/sticr.json",         <--- FILE THAT CONTAINS STICR HOST URL + PATH
+  "sticr_file_check_interval" : 60,                           <--- (DEFAULT IS 60 MINUTES) INTERVAL IN MINUTES FOR VESPER TO CHECK IF STICR URL HAS CHANGED
+  "root_certs_fetch_interval": 300,                           <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FETCH ROOT CERTS FROM SKS
+  "signing_credentials_fetch_interval": 300,                  <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FETCH FILENAME AND PRIVATE KEY REQUIRED FOR SIGNING\
+  "replay_attack_cache_validation_interval" : 70,             <--- (DEFAULT IS 70 SECONDS) INTERVAL IN SECONDS FOR VESPER TO CLEAR STALE REPLAY ATTACK CACHE. NOTE THAT THIS VALUE MUST BE GREATER THAN VALUE SET AS "valid_iat_period"
+  "public_keys_cache_flush_interval" : 300,                   <--- (DEFAULT IS 300 SECONDS) INTERVAL IN SECONDS FOR VESPER TO FLUSH ALL CACHED PUBLIC KEYS
+  "verify_root_ca" : true or false,                           <--- (VERIFICATION ONLY) IF FALSE, VERIFICATION, ROOT CERT VALIDATION IS NOT DONE
+  "valid_iat_period": 60                                      <--- (DEFAULT IS 60 SECONDS) IN SECONDS - VESPER WILL FAIL VERIFICATION, IF IAT VALUE IN IDENTITY HEADER EXCEEDS CURRENT TIME BY THIS VALUE
 }
 ```
 
-##### Unsuccessful
+### EKS config
 
-###### 400
+This is the **eks_credentials_file** in main config. This file is read at startup AS WELL AS runtime.
 
-Example
-```
+The following is the template for this configuration file (in JSON format)
+
+```sh
 {
-  "signingResponse": {
-    "reasonCode": "VESPER-0002",
-    "reasonString": "Unable to parse request body"
-  }
+  "aum": {
+  	"url": https://<FQDN/CNAME>/v1.1/login",    <--- CNAME/FQDN FOR IRIS AUTHENTICATION SERVICE - - MUST START WITH SCHEME HTTPS://
+  	"key": "",                                  <--- APP KEY FOR IRIS DOMAIN vesper.service.srv
+  	"secret": ""                                <--- APP SECRET FOR IRIS DOMAIN vesper.service.srv
+  },
+  "eks": "https://<FQDN/CNAME>"                 <--- CNAME/FQDN FOR IRIS ENCRYPTED KEYSTORE SERVICE (EKS) - MUST START WITH SCHEME HTTPS://
 }
 ```
 
-| reasonCode | reasonString |
-| ----- | ----- |
-| VESPER-0001 | empty request body |
-| VESPER-0002 | Unable to parse request body |
-| VESPER-0003 | one or more of the require fields missing in request payload |
-| VESPER-0004 | request payload has more than expected fields |
-| VESPER-0005 | attest field in request payload is an empty string |
-| VESPER-0006 | attest field in request payload is not as per SHAKEN spec |
-| VESPER-0007 | attest field in request payload MUST be a string |
-| VESPER-0008 | iat value in request payload is 0 |
-| VESPER-0009 | iat field in request payload MUST be a number |
-| VESPER-0010 | origid field in request payload is an empty string |
-| VESPER-0011 | origid field in request payload MUST be a string |
-| VESPER-0012 | orig in request payload is an empty object |
-| VESPER-0013 | orig in request payload should contain only one field |
-| VESPER-0014 | orig in request payload does not contain field \"tn\" |
-| VESPER-0015 | orig tn in request payload is not of type string |
-| VESPER-0016 | orig tn in request payload is an empty string |
-| VESPER-0017 | orig field in request payload MUST be a JSON object |
-| VESPER-0018 | dest in request payload is an empty object |
-| VESPER-0019 | dest in request payload should contain only one field |
-| VESPER-0020 | dest in request payload does not contain field \"tn\" |
-| VESPER-0021 | dest tn in request payload is an empty array |
-| VESPER-0022 | one or more dest tns in request payload is not a string |
-| VESPER-0023 | one or more dest tns in request payload is an empty string |
-| VESPER-0024 | dest tn in request payload is not an array |
-| VESPER-0025 | dest field in request payload MUST be a JSON object |
+### STICR config
 
-###### 500
+This is the **sticr_host_file** in main config. This file is read at startup AS WELL AS runtime.
 
-Example
-```
+The following is the template for configuration file (in JSON format)
+
+```sh
 {
-  "signingResponse": {
-    "reasonCode": "VESPER-0152",
-    "reasonString": "error in signing request"
-  }
+  "sticrHost": "https://<FQDN/CNAME>"           <--- CNAME/FQDN FOR STICR - MUST START WITH SCHEME HTTPS://
 }
 ```
-
-| reasonCode | reasonString |
-| ----- | ----- |
-| VESPER-0050 | error in converting header to byte array |
-| VESPER-0051 | error in converting claims to byte array |
-| VESPER-0052 | error in signing request |
-
-
-### POST /stir/v1/verification
-
-#### HTTP Response
-
-##### Success
-
-###### 200
-
-Example
-```
-{
-  "verificationResponse": {
-    "dest": {
-      "tn": [
-        "1215345567"
-      ]
-    },
-    "iat": 1504282247,
-    "jwt": {
-      "claims": {
-        "attest": "A",
-        "dest": {
-          "tn": [
-            "1215345567"
-          ]
-        },
-        "iat": 1504282247,
-        "orig": {
-          "tn": "12154567894"
-        },
-        "origid": "1db966a6-8f30-11e7-bc77-fa163e70349d"
-      },
-      "header": {
-        "alg": "ES256",
-        "ppt": "shaken",
-        "typ": "passport",
-        "x5u": "https://cert-auth.poc.sys.comcast.net/example.cer"
-      }
-    },
-    "orig": {
-      "tn": [
-        "12154567894"
-      ]
-    }
-  }
-}
-```
-
-##### Unsuccessful
-
-###### 400
-
-Example
-```
-{
-  "verificationResponse": {
-    "reasonCode": "VESPER-0100",
-    "reasonString": "Unable to parse request body"
-  }
-}
-```
-
-| reasonCode | reasonString |
-| ----- | ----- |
-| VESPER-0100 | empty request body |
-| VESPER-0102 | Unable to parse request body |
-| VESPER-0103 | one or more of the require fields missing in request payload |
-| VESPER-0104 | request payload has more than expected fields |
-| VESPER-0105 | iat value in request payload is 0 |
-| VESPER-0106 | iat field in request payload MUST be a number |
-| VESPER-0107 | identity field in request payload is an empty string |
-| VESPER-0108 | attest field in request payload MUST be a string |
-| VESPER-0109 | orig in request payload is an empty object |
-| VESPER-0110 | orig in request payload should contain only one field |
-| VESPER-0111 | orig in request payload does not contain field \"tn\" |
-| VESPER-0112 | orig tn in request payload is an empty array |
-| VESPER-0113 | one or more orig tns in request payload is not a string |
-| VESPER-0114 | one or more orig tns in request payload is an empty string |
-| VESPER-0115 | orig tn in request payload is not an array |
-| VESPER-0116 | orig field in request payload MUST be a JSON object |
-| VESPER-0117 | dest in request payload is an empty object |
-| VESPER-0118 | dest in request payload should contain only one field |
-| VESPER-0119 | dest in request payload does not contain field \"tn\" |
-| VESPER-0120 | dest tn in request payload is an empty array |
-| VESPER-0121 | one or more dest tns in request payload is not a string |
-| VESPER-0122 | one or more dest tns in request payload is an empty string |
-| VESPER-0123 | dest tn in request payload is not an array |
-| VESPER-0124 | dest field in request payload MUST be a JSON object |
-| VESPER-0125 | Invalid JWT format in identity header in request payload |
-| VESPER-0126 | decoded header does not have the expected number of fields (4) |
-| VESPER-0127 | one or more of the required fields missing in JWT header |
-| VESPER-0128 | alg field value in JWT header is not \"ES256\" |
-| VESPER-0129 | alg field value in JWT header is not a string |
-| VESPER-0130 | ppt field value in JWT header is not \"shaken\" |
-| VESPER-0131 | ppt field value in JWT header is not a string |
-| VESPER-0132 | typ field value in JWT header is not \"passport\" |
-| VESPER-0133 | typ field value in JWT header is not a string |
-| VESPER-0134 | x5u field value in JWT header is not a string |
-
-###### 500
-
-Example
-```
-{
-  "verificationResponse": {
-    "reasonCode": "VESPER-0150",
-    "reasonString": "unable to base64 url decode header part of JWT"
-  }
-}
-```
-
-| reasonCode | reasonString |
-| ----- | ----- |
-| VESPER-0150 | unable to base64 url decode header part of JWT |
-| VESPER-0151 | unable to unmarshal decoded JWT header |
-| VESPER-0152 | unable to base64 url decode claims part of JWT |
-| VESPER-0153 | unable to unmarshal decoded JWT claims |
-| VESPER-0154 | STRING WILL DEPEND ON ERROR DETECTED |

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"	
 	"runtime"
 	"sync"
 	"time"
@@ -37,6 +39,8 @@ const (
 	defaultMaxSize = 50 * 1024 *1024	// Default file size before rotating log
 )
 
+var ll *Logger
+
 // A Logger represents an active logging object that generates lines of
 // output to an io.Writer. Each logging operation makes a single call to
 // the Writer's Write method. A Logger can be used simultaneously from
@@ -61,7 +65,18 @@ func New(filename string, maxsize int64) *Logger {
 	if maxsize == 0 {
 		maxsize = defaultMaxSize
 	}
-	return &Logger{filename: filename, maxsize: maxsize}
+	ll = &Logger{filename: filename, maxsize: maxsize}
+	rotate := make(chan os.Signal, 1)
+	signal.Notify(rotate, syscall.SIGUSR1)
+	go func() {
+		for {
+			select {
+			case <-rotate:
+				ll.rotate()
+			}
+		}
+	}()
+	return ll
 }
 
 // SetOutput sets the output destination for the logger.
@@ -181,6 +196,48 @@ func (l *Logger) Output(calldepth int, s string) error {
 		l.rotate()
 	}
 	return err
+}
+
+// Printf calls l.Output to print to the logger.
+// Arguments are handled in the manner of fmt.Printf.
+func (l *Logger) Write(s []byte) (int, error) {
+	now := time.Now() // get this early.
+	var file string
+	var line int
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.flag&(Lshortfile|Llongfile) != 0 {
+		// release lock while getting caller info - it's expensive.
+		l.mu.Unlock()
+		var ok bool
+		_, file, line, ok = runtime.Caller(2)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		l.mu.Lock()
+	}
+	l.buf = l.buf[:0]
+	l.formatHeader(&l.buf, now, file, line)
+	l.buf = append(l.buf, s...)
+	if len(s) == 0 || s[len(s)-1] != '\n' {
+		l.buf = append(l.buf, '\n')
+	}
+	// check if file is open
+	if l.out == nil {
+		err := l.open()
+		if err != nil {
+			return 0, err
+		}
+	}
+	_, err := l.out.Write(l.buf)
+	// check if file size has reached the threshold value
+	// which is either defaultMaxSize or l.maxsize
+	l.size += int64(len(l.buf))
+	if l.size >= l.maxsize {
+		l.rotate()
+	}
+	return len(l.buf), err
 }
 
 // Printf calls l.Output to print to the logger.

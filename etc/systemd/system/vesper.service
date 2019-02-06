@@ -1,0 +1,11 @@
+[Unit]
+Description=signing and validation service
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/usr/local/vesper
+ExecStart=/usr/local/vesper/vesper_linux-amd64 /usr/local/vesper/config.json
+
+[Install]
+WantedBy=multi-user.target

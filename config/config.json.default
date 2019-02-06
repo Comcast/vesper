@@ -1,11 +1,22 @@
 {
 	"log_file" : "/var/log/vesper/vesper.log",
 	"log_file_max_size" : 50000000,
-	"fqdn" : "",
+	"log_host" : "",
+	"http_host" : "",
+	"http_port" : "",
 	"ssl_cert_file" : "",
 	"ssl_key_file" : "",
-	"authentication" : {
-		"x5u" : "",
-		"pvt_key_file" : ""
-	}
+	"eks_credentials_file" ; "",
+	"eks_credentials_refresh_interval" : 60,
+	"sticr_host_file" : "",
+	"sticr_file_check_interval": 60,
+	
+	"signing_credentials_fetch_interval" : 60,
+	"root_certs_fetch_interval" : 60,
+	"sticr_file_check_interval": 60,
+	"replay_attack_cache_validation_interval": 70,
+	"public_keys_cache_flush_interval": 300,
+	
+	"verify_root_ca" : true,
+	"valid_iat_period" : 60
 }

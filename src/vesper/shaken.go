@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
@@ -14,6 +15,7 @@ import (
 	"encoding/pem"
 	"io/ioutil"
 	"net/http"
+	"vesper/publickeys"
 )
 
 // ShakenHdr - structure that holds JWT header
@@ -56,7 +58,7 @@ func encodeWithSigner(header, claims []byte, sg signer) (string, string, error) 
 	h := base64Encode(header)
 	c := base64Encode(claims)
 	ss := fmt.Sprintf("%s.%s", h, c)
-	logInfo("%v", ss)
+	//logInfo("%v", ss)
 	sig, err := sg([]byte(ss))
 	if err != nil {
 		return "", "", err
@@ -71,13 +73,22 @@ func encodeWithSigner(header, claims []byte, sg signer) (string, string, error) 
 func encodeEC(header, claims []byte, key *ecdsa.PrivateKey) (string, string, error) {
 	sg := func(data []byte) (sig []byte, err error) {
 		h := sha256.New()
-		r := big.NewInt(0)
-		s := big.NewInt(0)
-		h.Write([]byte(data))
-		r,s,err = ecdsa.Sign(rand.Reader, key, h.Sum(nil))
-		signature := r.Bytes()
- 		signature = append(signature, s.Bytes()...)
-		return signature, err
+		h.Write(data)
+		r,s,err := ecdsa.Sign(rand.Reader, key, h.Sum(nil))
+		if err == nil {
+			b := key.Curve.Params().BitSize / 8
+			if key.Curve.Params().BitSize % 8 > 0 {
+				b += 1
+			}
+			// convert r and s into a byte array and add padded bytes to ensure big endian encoding
+			rp := make([]byte, b)
+			copy(rp[b-len(r.Bytes()):], r.Bytes())
+			sp := make([]byte, b)
+			copy(sp[b-len(s.Bytes()):], s.Bytes())
+			signature := append(rp, sp...)
+			return signature, err
+		}
+		return nil, err
 	}
 	return encodeWithSigner(header, claims, sg)
 }
@@ -97,11 +108,9 @@ func verifyWithSigner(token string, ver Verifier) error {
 func verifyEC(token string, key *ecdsa.PublicKey) error {
 	ver := func(data []byte, signature []byte) (err error) {
 		h := sha256.New()
-		r := big.NewInt(0)
-		s := big.NewInt(0)
-		h.Write([]byte(data))
-		r = new(big.Int).SetBytes(signature[:len(signature)/2])
-		s = new(big.Int).SetBytes(signature[len(signature)/2:])
+		h.Write(data)
+		r := new(big.Int).SetBytes(signature[:len(signature)/2])
+		s := new(big.Int).SetBytes(signature[len(signature)/2:])
 		if ecdsa.Verify(key, h.Sum(nil), r, s) {
 			return nil
 		}
@@ -115,29 +124,11 @@ func verifyEC(token string, key *ecdsa.PublicKey) error {
 // createSignature is called to create a JWT using ES256 algorithm.
 // Note: The header and claims part of the created JWT is stripped out
 //			 before returning the signature only
-func createSignature(header, claims []byte) (string, string, error)  {
-	private_key_file := config.Authentication["pvt_key_file"].(string)
-	// decode the private key
-	pvtkeybyte, err := ioutil.ReadFile(private_key_file)
+func createSignature(h, c []byte, p *ecdsa.PrivateKey) (string, string, error)  {
+	canonical_string, sig, err := encodeEC(h, c, p)
 	if err == nil {
-		block, _ := pem.Decode(pvtkeybyte)
-		if block != nil {
-			// alg = ES256
-			pvtkey, err := x509.ParseECPrivateKey(block.Bytes)
-			if err == nil {
-				canonical_string, sig, err := encodeEC(header, claims, pvtkey)
-				if err == nil {
-					return canonical_string, sig, nil
-				}
-			} else {
-				logInfo("%v", err)
-			}
-		} else {
-			err = fmt.Errorf("no PEM data found")
-		}
+		return canonical_string, sig, nil
 	}
-	// Handle error condition for any error here
-	logError("err: %v", err)
 	return "", "", err
 }
 
@@ -145,35 +136,78 @@ func createSignature(header, claims []byte) (string, string, error)  {
 // using  ES256 algorithm.
 // If the signature ois verified, the function returns nil. Otherwise,
 // an error message is returned
-func verifySignature(x5u, token string) error {
+func verifySignature(x5u, token string, verifyCA bool) (string, int, error) {
 	// Get the data each time
-	resp, err := http.Get(x5u)
+	pk := publickeys.Fetch(x5u)
+	if pk == nil {
+		resp, err := http.Get(x5u)
+		if err != nil {
+			logError("%v", err)
+			return "VESPER-4156", http.StatusBadRequest, err
+		}
+		defer resp.Body.Close()
+		// Writer the body to buffer
+		cert_buffer, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logError("%v", err)
+			return "VESPER-4157", http.StatusBadRequest, err
+		}
+		switch resp.StatusCode {
+		case 200:
+		default:
+			return "VESPER-4156", http.StatusBadRequest, fmt.Errorf("%v", string(cert_buffer))
+		}
+		b := string(cert_buffer[:])
+		block, _ := pem.Decode([]byte(b))
+		if block == nil {
+			err := fmt.Errorf("no PEM data is found")
+			return "VESPER-4158", http.StatusBadRequest, err
+		}
+		// parse certificate
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return "VESPER-4159", http.StatusBadRequest, err
+		}
+		now := time.Now()
+		opts := x509.VerifyOptions{CurrentTime: now,}
+		if verifyCA {
+			opts = x509.VerifyOptions{CurrentTime: now, Roots: rootCerts.Root(),}
+		}
+		if _, err := cert.Verify(opts); err != nil {
+			switch err.Error() {
+			case "x509: certificate has expired or is not yet valid":
+				return "VESPER-4160", http.StatusBadRequest, err
+			case "x509: certificate signed by unknown authority" :
+				if verifyCA {
+					return "VESPER-4161", http.StatusBadRequest, err
+				}
+			case "x509: certificate is not authorized to sign other certificates":
+				if verifyCA {
+					return "VESPER-4162", http.StatusBadRequest, err
+				}
+			case "x509: issuer name does not match subject from issuing certificate":
+				if verifyCA {
+					return "VESPER-4163", http.StatusBadRequest, err
+				}
+			default:
+				if verifyCA {
+					return "VESPER-4164", http.StatusBadRequest, err
+				}
+			}
+		}
+		// ES256
+		var ok bool
+		pk, ok = cert.PublicKey.(*ecdsa.PublicKey)
+		if !ok {
+			err = fmt.Errorf("Value returned from ParsePKIXPublicKey was not an ECDSA public key")
+			return "VESPER-4165", http.StatusBadRequest, err
+		}
+		// add to cache
+		publickeys.Add(x5u, pk)
+	}
+	err := verifyEC(token, pk)
 	if err != nil {
-		logError("%v", err)
-		return err
+		return "VESPER-4166", http.StatusUnauthorized, err
 	}
-	defer resp.Body.Close()
-	// Writer the body to buffer
-	cert_buffer, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logError("%v", err)
-		return err
-	}
-	block, _ := pem.Decode(cert_buffer)
-	if block == nil {
-		err = fmt.Errorf("no PEM data is found")
-		return err
-	}
-	// parse certificate
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return err
-	}
-	// ES256
-	ecdsa_pub, ok := cert.PublicKey.(*ecdsa.PublicKey)
-	if !ok {
-		err = fmt.Errorf("Value returned from ParsePKIXPublicKey was not an ECDSA public key")
-		return err
-	}
-	return verifyEC(token, ecdsa_pub)
+	return "", http.StatusOK, nil
 }
